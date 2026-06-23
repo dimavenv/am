@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 
-import { getOpenAI, SYSTEM_PROMPT } from "@/lib/openai";
+import { getOpenAI, OPENROUTER_MODEL, SYSTEM_PROMPT } from "@/lib/openai";
 import { getStripe } from "@/lib/stripe";
 import {
   getCached,
@@ -116,17 +116,20 @@ Offer Letter Text: ${context.offerText || "None provided"}
 
 Analyze this offer and return JSON.`;
 
+    // Not all OpenRouter models support response_format: json_object, so we
+    // instruct via the system prompt instead and parse defensively.
     const completion = await openai.chat.completions.create({
-      model: "gpt-4o",
+      model: OPENROUTER_MODEL,
       temperature: 0.6,
-      response_format: { type: "json_object" },
       messages: [
         { role: "system", content: SYSTEM_PROMPT },
         { role: "user", content: userMessage },
       ],
     });
 
-    const content = completion.choices[0]?.message?.content ?? "";
+    const raw = completion.choices[0]?.message?.content ?? "";
+    // Strip markdown code fences that some models wrap around JSON.
+    const content = raw.replace(/^```(?:json)?\s*/i, "").replace(/\s*```\s*$/, "").trim();
 
     let parsed: unknown;
     try {

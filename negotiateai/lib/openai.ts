@@ -1,18 +1,41 @@
 import OpenAI from "openai";
 
-let _openai: OpenAI | null = null;
+let _client: OpenAI | null = null;
 
-/** Lazily-initialized OpenAI client (see lib/stripe.ts for rationale). */
+/**
+ * OpenRouter is fully OpenAI-API compatible — we reuse the `openai` package
+ * with a custom baseURL. No extra dependencies needed.
+ */
 export function getOpenAI(): OpenAI {
-  if (!_openai) {
-    const key = process.env.OPENAI_API_KEY;
+  if (!_client) {
+    const key = process.env.OPENROUTER_API_KEY;
     if (!key) {
-      throw new Error("OPENAI_API_KEY is not set");
+      throw new Error("OPENROUTER_API_KEY is not set");
     }
-    _openai = new OpenAI({ apiKey: key });
+    _client = new OpenAI({
+      apiKey: key,
+      baseURL: "https://openrouter.ai/api/v1",
+      defaultHeaders: {
+        "HTTP-Referer": process.env.NEXT_PUBLIC_BASE_URL || "https://negotiateai.com",
+        "X-Title": "NegotiateAI",
+      },
+    });
   }
-  return _openai;
+  return _client;
 }
+
+/**
+ * Model to use via OpenRouter.
+ * Free tier options (no billing required):
+ *   - meta-llama/llama-3.3-70b-instruct:free
+ *   - google/gemma-3-27b-it:free
+ *   - nvidia/nemotron-3-ultra-550b-a55b:free  (slower but very capable)
+ * Paid (better for production):
+ *   - openai/gpt-4o-mini   (~$0.01 / analysis)
+ *   - anthropic/claude-3-haiku (~$0.01 / analysis)
+ */
+export const OPENROUTER_MODEL =
+  process.env.OPENROUTER_MODEL || "meta-llama/llama-3.3-70b-instruct:free";
 
 export const SYSTEM_PROMPT = `You are a professional salary negotiation advisor with deep knowledge of US job market compensation data across all industries and cities. You have access to patterns from Glassdoor, LinkedIn Salary, Levels.fyi, and Bureau of Labor Statistics.
 
@@ -40,4 +63,5 @@ Always respond in valid JSON with this exact structure:
   "emailDraft": "Subject: Re: Offer for [Role] Position\\n\\nHi [Recruiter Name],\\n\\nThank you so much for the offer..."
 }
 
-The "rating" field MUST be one of: "underpaid", "fair", "above_market".`;
+The "rating" field MUST be one of: "underpaid", "fair", "above_market".
+Respond with JSON only — no markdown, no explanation outside the JSON object.`;
