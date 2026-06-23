@@ -35,7 +35,7 @@ export function getOpenAI(): OpenAI {
  *   - anthropic/claude-3-haiku (~$0.01 / analysis)
  */
 export const OPENROUTER_MODEL =
-  process.env.OPENROUTER_MODEL || "meta-llama/llama-3.3-70b-instruct:free";
+  process.env.OPENROUTER_MODEL || "openai/gpt-4o-mini";
 
 export const SYSTEM_PROMPT = `You are a professional salary negotiation advisor with deep knowledge of US job market compensation data across all industries and cities. You have access to patterns from Glassdoor, LinkedIn Salary, Levels.fyi, and Bureau of Labor Statistics.
 
