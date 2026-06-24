@@ -3,7 +3,10 @@
 import {
   Document,
   Page,
+  Polygon,
+  Rect,
   StyleSheet,
+  Svg,
   Text,
   View,
 } from "@react-pdf/renderer";
@@ -41,11 +44,6 @@ const RATING_BORDER: Record<Rating, string> = {
   underpaid: "#fecaca",
   fair: "#fde68a",
   above_market: "#bbf7d0",
-};
-const RATING_SYMBOL: Record<Rating, string> = {
-  underpaid: "▼",
-  fair: "═",
-  above_market: "▲",
 };
 
 const fmtUSD = (v: number) =>
@@ -119,11 +117,6 @@ const s = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     marginBottom: 5,
-  },
-  ratingSymbol: {
-    fontSize: 13,
-    fontFamily: "Helvetica-Bold",
-    marginRight: 7,
   },
   ratingLabel: {
     fontSize: 22,
@@ -334,14 +327,7 @@ export function OfferReportPDF({ result }: { result: ResultResponse }) {
           ]}
         >
           <View style={s.ratingSymbolRow}>
-            <Text
-              style={[
-                s.ratingSymbol,
-                { color: RATING_COLOR[rating] },
-              ]}
-            >
-              {RATING_SYMBOL[rating]}
-            </Text>
+            <RatingMark rating={rating} color={RATING_COLOR[rating]} />
             <Text
               style={[s.ratingLabel, { color: RATING_COLOR[rating] }]}
             >
@@ -443,6 +429,29 @@ export function OfferReportPDF({ result }: { result: ResultResponse }) {
         </View>
       </Page>
     </Document>
+  );
+}
+
+/**
+ * Up/down/equals indicator drawn with vector SVG (no font glyphs — standard
+ * PDF Helvetica is Latin-1 only, so unicode arrows render as tofu; and
+ * react-pdf's CSS border-triangle trick mis-miters the downward case).
+ */
+function RatingMark({ rating, color }: { rating: Rating; color: string }) {
+  if (rating === "fair") {
+    return (
+      <Svg width={13} height={9} viewBox="0 0 13 9" style={{ marginRight: 9 }}>
+        <Rect x={0} y={1} width={13} height={2.6} fill={color} />
+        <Rect x={0} y={5.4} width={13} height={2.6} fill={color} />
+      </Svg>
+    );
+  }
+  const points =
+    rating === "above_market" ? "6,0 12,11 0,11" : "0,0 12,0 6,11";
+  return (
+    <Svg width={12} height={11} viewBox="0 0 12 11" style={{ marginRight: 9 }}>
+      <Polygon points={points} fill={color} />
+    </Svg>
   );
 }
 
