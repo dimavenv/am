@@ -8,6 +8,7 @@ import { RatingBadge } from "@/components/RatingBadge";
 import { EmailDraft } from "@/components/EmailDraft";
 import { OfferGauge } from "@/components/OfferGauge";
 import { CountUp } from "@/components/CountUp";
+import { DownloadPDFButton } from "@/components/DownloadPDFButton";
 import type { ResultResponse } from "@/lib/types";
 
 const TWITTER_HANDLE = "NegotiateAI";
@@ -44,12 +45,15 @@ export function ResultCard({ result }: { result: ResultResponse }) {
       className="mx-auto w-full max-w-2xl space-y-6"
     >
       {/* Header */}
-      <motion.div variants={item} className="space-y-1 text-center">
-        <h1 className="text-3xl font-bold tracking-tight">Your Offer Analysis</h1>
-        <p className="text-muted-foreground">
-          {context.jobTitle}
-          {context.companyName ? ` · ${context.companyName}` : ""}
-        </p>
+      <motion.div variants={item} className="flex flex-col items-center gap-3 text-center">
+        <div className="space-y-1">
+          <h1 className="text-3xl font-bold tracking-tight">Your Offer Analysis</h1>
+          <p className="text-muted-foreground">
+            {context.jobTitle}
+            {context.companyName ? ` · ${context.companyName}` : ""}
+          </p>
+        </div>
+        <DownloadPDFButton result={result} />
       </motion.div>
 
       {/* Rating */}
