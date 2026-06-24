@@ -30,7 +30,7 @@ export function AnalyzingChart({
 
   return (
     <div className="flex flex-col items-center justify-center gap-8 py-24 text-center">
-      <div className="relative h-44 w-72">
+      <div className="relative h-44 w-full max-w-[18rem]">
         {/* glow */}
         <div className="pointer-events-none absolute inset-0 rounded-2xl bg-primary/10 blur-2xl" />
 

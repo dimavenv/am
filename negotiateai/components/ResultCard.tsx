@@ -68,7 +68,7 @@ export function ResultCard({ result }: { result: ResultResponse }) {
             <p className="text-sm text-muted-foreground">
               For a {years}-year {role} in {city}, the market range is
             </p>
-            <p className="text-2xl font-semibold">
+            <p className="text-2xl font-semibold tabular-nums">
               <CountUp value={result.marketRangeLow} /> –{" "}
               <CountUp value={result.marketRangeHigh} delay={0.15} />
               <span className="text-base font-normal text-muted-foreground">
@@ -97,7 +97,7 @@ export function ResultCard({ result }: { result: ResultResponse }) {
               <p className="text-sm text-muted-foreground">
                 Recommended counter-offer
               </p>
-              <p className="text-3xl font-bold text-primary">
+              <p className="text-2xl font-bold tabular-nums text-primary sm:text-3xl">
                 Ask for <CountUp value={result.counterOffer} delay={0.2} />
               </p>
             </div>

@@ -8,7 +8,7 @@ export const dynamic = "force-dynamic";
 
 export default function ResultPage() {
   return (
-    <main className="container min-h-screen py-12 sm:py-16">
+    <main className="container min-h-dvh py-12 sm:py-16">
       <Suspense fallback={<AnalyzingChart />}>
         <ResultView />
       </Suspense>
