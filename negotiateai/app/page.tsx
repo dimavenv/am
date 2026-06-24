@@ -1,4 +1,4 @@
-import { AlertTriangle, Check, Star } from "lucide-react";
+import { Check, Star } from "lucide-react";
 
 import { OfferForm } from "@/components/OfferForm";
 import { Card, CardContent } from "@/components/ui/card";
@@ -56,28 +56,13 @@ const FAQS = [
   },
 ];
 
-export default function Home({
-  searchParams,
-}: {
-  searchParams: { error?: string };
-}) {
-  const error = searchParams?.error;
-
+export default function Home() {
   return (
     <main className="relative min-h-dvh overflow-hidden">
       <div className="pointer-events-none absolute inset-0 bg-grid opacity-60" />
       <div className="pointer-events-none absolute left-1/2 top-0 h-[420px] w-[820px] -translate-x-1/2 rounded-full bg-primary/10 blur-[120px]" />
 
       <div className="container relative z-10">
-        {error && (
-          <div className="mt-6 flex items-center gap-3 rounded-lg border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive">
-            <AlertTriangle className="h-4 w-4 shrink-0" />
-            {error === "payment_failed"
-              ? "We couldn't verify your payment. If you were charged, email support@negotiateai.com."
-              : "Your checkout was canceled. No worries — you can analyze your offer whenever you're ready."}
-          </div>
-        )}
-
         {/* Hero */}
         <section className="mx-auto max-w-3xl pb-12 pt-20 text-center sm:pt-28">
           <span className="inline-flex items-center gap-2 rounded-full border border-border bg-card px-3 py-1 text-xs text-muted-foreground">

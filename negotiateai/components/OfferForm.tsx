@@ -1,13 +1,15 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
 import {
   ArrowLeft,
   ArrowRight,
   Clock,
+  ExternalLink,
   FileCheck,
-  Loader2,
+  KeyRound,
   Mail,
   Sparkles,
   Upload,
@@ -18,6 +20,8 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { AnalyzingChart } from "@/components/AnalyzingChart";
+import { RESULT_STORAGE_KEY } from "@/lib/storage";
 
 type Fields = {
   jobTitle: string;
@@ -37,7 +41,11 @@ const EMPTY: Fields = {
   notes: "",
 };
 
-const TOTAL_STEPS = 3;
+const DATA_STEPS = 3; // steps that fill the progress bar
+const UNLOCK_STEP = 4;
+
+const BOOSTY_URL =
+  process.env.NEXT_PUBLIC_BOOSTY_URL || "https://boosty.to";
 
 function fileToBase64(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
@@ -59,33 +67,38 @@ const slide = {
 };
 
 export function OfferForm() {
-  const [step, setStep] = useState(0); // 0 = intro, 1..3 = form steps
+  const router = useRouter();
+  const [step, setStep] = useState(0); // 0 = intro, 1..3 = data, 4 = unlock
   const [dir, setDir] = useState(1);
   const [fields, setFields] = useState<Fields>(EMPTY);
   const [file, setFile] = useState<File | null>(null);
+  const [code, setCode] = useState("");
   const [stepError, setStepError] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
   const set =
-    (key: keyof Fields) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
+    (key: keyof Fields) =>
+    (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
       setFields((f) => ({ ...f, [key]: e.target.value }));
 
   function goTo(next: number, direction: number) {
     setDir(direction);
     setStepError(null);
+    setError(null);
     setStep(next);
   }
 
   function validateStep(s: number): string | null {
-    if (s === 1) {
-      if (!fields.jobTitle.trim() || !fields.companyName.trim())
-        return "Please fill in the job title and company.";
-    }
-    if (s === 2) {
-      if (!fields.salary.trim() || !fields.yearsOfExperience.trim() || !fields.city.trim())
-        return "Please fill in salary, experience and city.";
-    }
+    if (s === 1 && (!fields.jobTitle.trim() || !fields.companyName.trim()))
+      return "Please fill in the job title and company.";
+    if (
+      s === 2 &&
+      (!fields.salary.trim() ||
+        !fields.yearsOfExperience.trim() ||
+        !fields.city.trim())
+    )
+      return "Please fill in salary, experience and city.";
     return null;
   }
 
@@ -95,18 +108,24 @@ export function OfferForm() {
     goTo(step + 1, 1);
   }
 
-  async function handleSubmit() {
+  async function handleAnalyze() {
+    if (!code.trim()) {
+      setError("Please enter your access code.");
+      return;
+    }
     setError(null);
     setSubmitting(true);
     try {
       let pdfBase64: string | undefined;
       if (file) {
-        if (file.type !== "application/pdf") throw new Error("Please upload a PDF file.");
-        if (file.size > 8 * 1024 * 1024) throw new Error("PDF is too large (max 8MB).");
+        if (file.type !== "application/pdf")
+          throw new Error("Please upload a PDF file.");
+        if (file.size > 8 * 1024 * 1024)
+          throw new Error("PDF is too large (max 8MB).");
         pdfBase64 = await fileToBase64(file);
       }
 
-      const res = await fetch("/api/create-checkout", {
+      const res = await fetch("/api/analyze", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -117,39 +136,52 @@ export function OfferForm() {
           yearsOfExperience: fields.yearsOfExperience.trim(),
           notes: fields.notes.trim(),
           pdfBase64,
+          code: code.trim(),
         }),
       });
 
+      const data = await res.json().catch(() => ({}));
       if (!res.ok) {
-        const body = await res.json().catch(() => ({}));
-        throw new Error(body.error || "Something went wrong. Please try again.");
+        throw new Error(data.error || "Something went wrong. Please try again.");
       }
-      const { url } = await res.json();
-      if (!url) throw new Error("Could not start checkout. Please try again.");
-      window.location.href = url;
+
+      sessionStorage.setItem(RESULT_STORAGE_KEY, JSON.stringify(data));
+      router.push("/result");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong.");
       setSubmitting(false);
     }
   }
 
+  const progress = Math.min(step, DATA_STEPS);
+
+  // Full-card analyzing state.
+  if (submitting) {
+    return (
+      <Card className="mx-auto max-w-xl overflow-hidden">
+        <CardContent className="p-6 sm:p-8">
+          <AnalyzingChart />
+        </CardContent>
+      </Card>
+    );
+  }
+
   return (
     <Card className="mx-auto max-w-xl overflow-hidden">
       <CardContent className="p-6 sm:p-8">
-        {/* Progress (hidden on intro) */}
         {step > 0 && (
           <div className="mb-7">
             <div className="mb-2 flex items-center justify-between text-xs text-muted-foreground">
               <span>
-                Step {step} of {TOTAL_STEPS}
+                {step <= DATA_STEPS ? `Step ${step} of ${DATA_STEPS}` : "Last step"}
               </span>
-              <span>{Math.round((step / TOTAL_STEPS) * 100)}% there</span>
+              <span>{Math.round((progress / DATA_STEPS) * 100)}% there</span>
             </div>
             <div className="h-1.5 w-full overflow-hidden rounded-full bg-secondary">
               <motion.div
                 className="h-full rounded-full bg-primary"
                 initial={false}
-                animate={{ width: `${(step / TOTAL_STEPS) * 100}%` }}
+                animate={{ width: `${(progress / DATA_STEPS) * 100}%` }}
                 transition={{ type: "spring", stiffness: 180, damping: 24 }}
               />
             </div>
@@ -182,7 +214,10 @@ export function OfferForm() {
                 <div className="space-y-3 text-left">
                   {[
                     { Icon: Clock, text: "60 seconds, 3 short steps" },
-                    { Icon: FileCheck, text: "Market range + exact counter-offer number" },
+                    {
+                      Icon: FileCheck,
+                      text: "Market range + exact counter-offer number",
+                    },
                     { Icon: Mail, text: "A ready-to-send negotiation email" },
                   ].map(({ Icon, text }) => (
                     <div key={text} className="flex items-center gap-3 text-sm">
@@ -193,7 +228,11 @@ export function OfferForm() {
                     </div>
                   ))}
                 </div>
-                <Button size="lg" className="w-full text-base" onClick={() => goTo(1, 1)}>
+                <Button
+                  size="lg"
+                  className="w-full text-base"
+                  onClick={() => goTo(1, 1)}
+                >
                   Let&apos;s go <ArrowRight />
                 </Button>
               </div>
@@ -224,7 +263,10 @@ export function OfferForm() {
 
             {step === 2 && (
               <div className="space-y-5">
-                <StepHeading title="The numbers" subtitle="This is how we find your market rate." />
+                <StepHeading
+                  title="The numbers"
+                  subtitle="This is how we find your market rate."
+                />
                 <div className="grid gap-5 sm:grid-cols-2">
                   <Field label="Offered Base Salary (USD)" htmlFor="salary">
                     <Input
@@ -296,11 +338,52 @@ export function OfferForm() {
                 </Field>
               </div>
             )}
+
+            {step === UNLOCK_STEP && (
+              <div className="space-y-5">
+                <div className="space-y-1 text-center">
+                  <div className="mx-auto mb-2 flex h-12 w-12 items-center justify-center rounded-xl bg-primary/15 text-primary">
+                    <KeyRound className="h-6 w-6" />
+                  </div>
+                  <h3 className="text-xl font-bold tracking-tight">
+                    Unlock your analysis
+                  </h3>
+                  <p className="text-sm text-muted-foreground">
+                    Get an access code on Boosty, then paste it below. Your full
+                    analysis appears instantly.
+                  </p>
+                </div>
+
+                <a
+                  href={BOOSTY_URL}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex w-full items-center justify-center gap-2 rounded-lg border border-primary/40 bg-primary/[0.08] px-4 py-3 text-sm font-medium text-primary transition-colors hover:bg-primary/[0.14]"
+                >
+                  Get my access code on Boosty <ExternalLink className="h-4 w-4" />
+                </a>
+
+                <Field label="Access code" htmlFor="code">
+                  <Input
+                    id="code"
+                    autoFocus
+                    value={code}
+                    onChange={(e) => setCode(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") handleAnalyze();
+                    }}
+                    placeholder="NEGO-XXXXXXXX-XXXXXXXX"
+                    className="text-center font-mono tracking-wider"
+                    autoCapitalize="characters"
+                    spellCheck={false}
+                  />
+                </Field>
+              </div>
+            )}
           </motion.div>
         </AnimatePresence>
 
-        {/* Step-level validation */}
-        {stepError && step > 0 && (
+        {stepError && step > 0 && step <= DATA_STEPS && (
           <p className="mt-4 text-sm text-destructive">{stepError}</p>
         )}
         {error && (
@@ -309,39 +392,32 @@ export function OfferForm() {
           </p>
         )}
 
-        {/* Navigation */}
         {step > 0 && (
           <div className="mt-7 flex items-center gap-3">
             <Button
               variant="outline"
               size="lg"
               onClick={() => goTo(step - 1, -1)}
-              disabled={submitting}
               className="shrink-0"
             >
               <ArrowLeft />
             </Button>
 
-            {step < TOTAL_STEPS ? (
+            {step < DATA_STEPS ? (
               <Button size="lg" className="flex-1 text-base" onClick={next}>
                 Continue <ArrowRight />
+              </Button>
+            ) : step === DATA_STEPS ? (
+              <Button size="lg" className="flex-1 text-base" onClick={next}>
+                Continue to unlock <ArrowRight />
               </Button>
             ) : (
               <Button
                 size="lg"
                 className="flex-1 text-base"
-                onClick={handleSubmit}
-                disabled={submitting}
+                onClick={handleAnalyze}
               >
-                {submitting ? (
-                  <>
-                    <Loader2 className="animate-spin" /> Redirecting to checkout…
-                  </>
-                ) : (
-                  <>
-                    Analyze My Offer — $9 <ArrowRight />
-                  </>
-                )}
+                Unlock &amp; Analyze <ArrowRight />
               </Button>
             )}
           </div>
@@ -349,8 +425,8 @@ export function OfferForm() {
 
         {step > 0 && (
           <p className="mt-4 text-center text-xs text-muted-foreground">
-            Secure one-time payment via Stripe · No account · We don&apos;t store
-            your offer details.
+            Paid once via Boosty · No account · We don&apos;t store your offer
+            details.
           </p>
         )}
       </CardContent>

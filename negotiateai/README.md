@@ -1,33 +1,54 @@
 # NegotiateAI
 
-A production-ready SaaS that helps US job seekers negotiate better salaries.
-Paste your offer, pay **$9 once**, and instantly get a market analysis plus a
-ready-to-send negotiation email. No account, no subscription, no database.
+A SaaS that helps US job seekers negotiate better salaries. Paste your offer,
+unlock with an access code, and instantly get a market analysis plus a
+ready-to-send negotiation email. No account, no database.
 
 ## Stack
 
 - **Next.js 14** (App Router) + **TypeScript**
 - **Tailwind CSS** + shadcn/ui-style components (dark fintech theme)
-- **OpenAI** GPT-4o for the analysis
-- **Stripe** Checkout (one-time $9 payment)
+- **OpenRouter** (default `openai/gpt-4o-mini`) for the analysis
+- **Access codes** sold via **Boosty** for payment (see below)
 - **pdf-parse** for optional offer-letter PDF extraction
+- **@react-pdf/renderer** for the downloadable PDF report
 - Deploys to **Vercel**
 
-## How it works
+## How payment works (Boosty + access codes)
 
-1. User fills out the offer form on `/` (job title, salary, city, experience,
-   optional offer-letter PDF, notes).
-2. `POST /api/create-checkout` parses any PDF, stores the fields in Stripe
-   Checkout **metadata**, and returns a Checkout URL.
-3. After paying, Stripe redirects to `/result?session_id=...`.
-4. `GET /api/get-result` verifies the session was **paid**, then calls GPT-4o
-   and returns structured JSON (rating, market range, counter-offer, talking
-   points, email draft).
-5. Results render on `/result`. The email is one-click copyable.
+Boosty has no API to confirm a one-off payment server-side, so access is gated
+by **codes**:
 
-The `session_id` is the only "auth" — only a paid session can fetch a result.
-Generated analyses are cached in-memory per session so reloads don't re-bill
-OpenAI.
+1. You mint signed codes and sell them on Boosty (a paid post / subscription /
+   DM to buyers).
+2. On the unlock step the user clicks **“Get my access code on Boosty”**
+   (`NEXT_PUBLIC_BOOSTY_URL`) and pastes the code.
+3. `POST /api/analyze` verifies the code's HMAC signature **and** that it hasn't
+   been used, then calls the AI and returns the result. The code is only burned
+   on a successful analysis (a server hiccup never wastes a buyer's code).
+
+Codes look like `NEGO-7Q2KX9AB-3F9C2A1B` and are validated with no database via
+`ACCESS_CODE_SECRET`. Single-use is enforced in memory by default, or durably
+with Upstash Redis if configured.
+
+There's also an optional `ACCESS_CODE_STATIC` (a single shared code, e.g. placed
+inside a subscribers-only Boosty post) — accepted in addition to signed codes,
+but not single-use.
+
+### Minting codes
+
+```bash
+ACCESS_CODE_SECRET=your-secret node scripts/gen-codes.mjs 50
+```
+
+## How a run works
+
+1. User fills the multi-step form on `/` (role, numbers, optional PDF + notes).
+2. On the unlock step they enter a Boosty access code.
+3. `POST /api/analyze` validates the code, parses any PDF, calls the AI, returns
+   structured JSON (rating, market range, counter-offer, talking points, email).
+4. The result is stashed in `sessionStorage` and rendered on `/result` —
+   animated reveal, market gauge, copyable email, and a **Download PDF** button.
 
 ## Local development
 
@@ -37,41 +58,45 @@ cp .env.local.example .env.local   # then fill in your keys
 npm run dev
 ```
 
-Open http://localhost:3000.
-
-> Tip: use Stripe **test mode** keys and card `4242 4242 4242 4242` to walk the
-> full flow end-to-end before going live.
+Open http://localhost:3000. Mint a test code with the command above (using the
+same `ACCESS_CODE_SECRET`) to walk the full flow.
 
 ## Environment variables
 
-| Variable                  | Purpose                                            |
-| ------------------------- | -------------------------------------------------- |
-| `OPENAI_API_KEY`          | Server-side GPT-4o calls                            |
-| `STRIPE_SECRET_KEY`       | Create + verify Checkout sessions                  |
-| `STRIPE_PUBLISHABLE_KEY`  | Reserved for client Stripe.js (hosted checkout)    |
-| `NEXT_PUBLIC_BASE_URL`    | Base URL for redirect + OG metadata                |
+| Variable                    | Purpose                                              |
+| --------------------------- | ---------------------------------------------------- |
+| `OPENROUTER_API_KEY`        | AI calls via OpenRouter                              |
+| `OPENROUTER_MODEL`          | Optional model override (default gpt-4o-mini)        |
+| `NEXT_PUBLIC_BOOSTY_URL`    | Link behind the “Get my access code” button         |
+| `ACCESS_CODE_SECRET`        | Mints & verifies signed single-use codes            |
+| `ACCESS_CODE_STATIC`        | Optional shared code (not single-use)               |
+| `UPSTASH_REDIS_REST_URL`    | Optional — durable single-use storage               |
+| `UPSTASH_REDIS_REST_TOKEN`  | Optional — Upstash auth token                        |
+| `NEXT_PUBLIC_BASE_URL`      | Base URL for OG metadata                             |
 
 ## Project structure
 
 ```
 app/
   layout.tsx              Root layout, Inter font, dark theme, SEO/OG metadata
-  page.tsx                Landing page + offer form
+  page.tsx                Landing page + multi-step offer form
   opengraph-image.tsx     Generated OG image (1200×630)
-  result/page.tsx         Results page (Suspense-wrapped)
-  api/create-checkout/    Creates the Stripe Checkout session
-  api/get-result/         Verifies payment + calls OpenAI
-components/               OfferForm, ResultCard, RatingBadge, EmailDraft, …
+  result/page.tsx         Results page (reads result from sessionStorage)
+  api/analyze/            Validates access code + calls the AI
+components/               OfferForm, ResultCard, RatingBadge, OfferGauge,
+  pdf/OfferReport.tsx     EmailDraft, DownloadPDFButton, AnalyzingChart, …
   ui/                     Button, Card, Badge, Input, Label, Textarea
-lib/                      stripe, openai, types, utils, analysisCache
+lib/                      openai (OpenRouter), accessCodes, types, utils, storage
+scripts/gen-codes.mjs     Mint signed access codes
 ```
 
 ## Deploy to Vercel
 
 1. Push to GitHub and import the repo in Vercel.
-2. Add the env vars above in the Vercel dashboard.
-3. Set `NEXT_PUBLIC_BASE_URL` to your production domain.
-4. Test in Stripe test mode, then switch to live keys.
+2. Add the env vars above (at minimum `OPENROUTER_API_KEY`, `ACCESS_CODE_SECRET`,
+   `NEXT_PUBLIC_BOOSTY_URL`).
+3. For durable single-use codes across deploys, add an Upstash Redis integration
+   and set the two `UPSTASH_*` vars.
 
 > ⚠️ The landing page ships with sample testimonials and a "10,000+ offers
 > analyzed" trust line. Replace these with real, substantiated numbers before
