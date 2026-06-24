@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 
-import { LoadingSpinner } from "@/components/LoadingSpinner";
+import { AnalyzingChart } from "@/components/AnalyzingChart";
 import { ResultCard } from "@/components/ResultCard";
 import { Button } from "@/components/ui/button";
 import type { ResultResponse } from "@/lib/types";
@@ -71,7 +71,7 @@ export function ResultView() {
     );
   }
 
-  if (!result) return <LoadingSpinner />;
+  if (!result) return <AnalyzingChart />;
 
   return <ResultCard result={result} />;
 }

@@ -1,14 +1,44 @@
 "use client";
 
 import { useState } from "react";
-import { ArrowRight, Loader2, Upload } from "lucide-react";
+import { AnimatePresence, motion } from "framer-motion";
+import {
+  ArrowLeft,
+  ArrowRight,
+  Clock,
+  FileCheck,
+  Loader2,
+  Mail,
+  Sparkles,
+  Upload,
+} from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 
-/** Read a File into a base64 string (no data: prefix). */
+type Fields = {
+  jobTitle: string;
+  companyName: string;
+  salary: string;
+  city: string;
+  yearsOfExperience: string;
+  notes: string;
+};
+
+const EMPTY: Fields = {
+  jobTitle: "",
+  companyName: "",
+  salary: "",
+  city: "",
+  yearsOfExperience: "",
+  notes: "",
+};
+
+const TOTAL_STEPS = 3;
+
 function fileToBase64(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -22,57 +52,78 @@ function fileToBase64(file: File): Promise<string> {
   });
 }
 
-export function OfferForm() {
-  const [submitting, setSubmitting] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [fileName, setFileName] = useState<string | null>(null);
+const slide = {
+  enter: (dir: number) => ({ x: dir > 0 ? 48 : -48, opacity: 0 }),
+  center: { x: 0, opacity: 1 },
+  exit: (dir: number) => ({ x: dir > 0 ? -48 : 48, opacity: 0 }),
+};
 
-  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
-    e.preventDefault();
+export function OfferForm() {
+  const [step, setStep] = useState(0); // 0 = intro, 1..3 = form steps
+  const [dir, setDir] = useState(1);
+  const [fields, setFields] = useState<Fields>(EMPTY);
+  const [file, setFile] = useState<File | null>(null);
+  const [stepError, setStepError] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [submitting, setSubmitting] = useState(false);
+
+  const set =
+    (key: keyof Fields) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
+      setFields((f) => ({ ...f, [key]: e.target.value }));
+
+  function goTo(next: number, direction: number) {
+    setDir(direction);
+    setStepError(null);
+    setStep(next);
+  }
+
+  function validateStep(s: number): string | null {
+    if (s === 1) {
+      if (!fields.jobTitle.trim() || !fields.companyName.trim())
+        return "Please fill in the job title and company.";
+    }
+    if (s === 2) {
+      if (!fields.salary.trim() || !fields.yearsOfExperience.trim() || !fields.city.trim())
+        return "Please fill in salary, experience and city.";
+    }
+    return null;
+  }
+
+  function next() {
+    const err = validateStep(step);
+    if (err) return setStepError(err);
+    goTo(step + 1, 1);
+  }
+
+  async function handleSubmit() {
     setError(null);
     setSubmitting(true);
-
     try {
-      const form = e.currentTarget;
-      const data = new FormData(form);
-
-      const fileInput = form.elements.namedItem(
-        "offerLetter"
-      ) as HTMLInputElement | null;
-      const file = fileInput?.files?.[0];
-
       let pdfBase64: string | undefined;
       if (file) {
-        if (file.type !== "application/pdf") {
-          throw new Error("Please upload a PDF file.");
-        }
-        if (file.size > 8 * 1024 * 1024) {
-          throw new Error("PDF is too large (max 8MB).");
-        }
+        if (file.type !== "application/pdf") throw new Error("Please upload a PDF file.");
+        if (file.size > 8 * 1024 * 1024) throw new Error("PDF is too large (max 8MB).");
         pdfBase64 = await fileToBase64(file);
       }
-
-      const payload = {
-        jobTitle: String(data.get("jobTitle") ?? "").trim(),
-        companyName: String(data.get("companyName") ?? "").trim(),
-        salary: String(data.get("salary") ?? "").trim(),
-        city: String(data.get("city") ?? "").trim(),
-        yearsOfExperience: String(data.get("yearsOfExperience") ?? "").trim(),
-        notes: String(data.get("notes") ?? "").trim(),
-        pdfBase64,
-      };
 
       const res = await fetch("/api/create-checkout", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
+        body: JSON.stringify({
+          jobTitle: fields.jobTitle.trim(),
+          companyName: fields.companyName.trim(),
+          salary: fields.salary.trim(),
+          city: fields.city.trim(),
+          yearsOfExperience: fields.yearsOfExperience.trim(),
+          notes: fields.notes.trim(),
+          pdfBase64,
+        }),
       });
 
       if (!res.ok) {
         const body = await res.json().catch(() => ({}));
         throw new Error(body.error || "Something went wrong. Please try again.");
       }
-
       const { url } = await res.json();
       if (!url) throw new Error("Could not start checkout. Please try again.");
       window.location.href = url;
@@ -83,116 +134,252 @@ export function OfferForm() {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-5">
-      <div className="space-y-2">
-        <Label htmlFor="jobTitle">Job Title</Label>
-        <Input
-          id="jobTitle"
-          name="jobTitle"
-          required
-          placeholder="Senior Software Engineer"
-        />
-      </div>
-
-      <div className="space-y-2">
-        <Label htmlFor="companyName">Company Name</Label>
-        <Input id="companyName" name="companyName" required placeholder="Acme Inc." />
-      </div>
-
-      <div className="grid gap-5 sm:grid-cols-2">
-        <div className="space-y-2">
-          <Label htmlFor="salary">Offered Base Salary (USD)</Label>
-          <Input
-            id="salary"
-            name="salary"
-            type="number"
-            min={0}
-            required
-            placeholder="140000"
-          />
-        </div>
-        <div className="space-y-2">
-          <Label htmlFor="yearsOfExperience">Years of Experience</Label>
-          <Input
-            id="yearsOfExperience"
-            name="yearsOfExperience"
-            type="number"
-            min={0}
-            max={60}
-            required
-            placeholder="6"
-          />
-        </div>
-      </div>
-
-      <div className="space-y-2">
-        <Label htmlFor="city">City / Metro Area</Label>
-        <Input
-          id="city"
-          name="city"
-          required
-          placeholder="San Francisco, CA"
-        />
-      </div>
-
-      <div className="space-y-2">
-        <Label htmlFor="offerLetter">Upload Offer Letter (optional)</Label>
-        <label
-          htmlFor="offerLetter"
-          className="flex cursor-pointer items-center gap-3 rounded-lg border border-dashed border-input bg-background px-3 py-3 text-sm text-muted-foreground transition-colors hover:border-primary/40"
-        >
-          <Upload className="h-4 w-4" />
-          <span className="truncate">
-            {fileName ?? "Drop a PDF to extract bonus, equity & benefits"}
-          </span>
-        </label>
-        <input
-          id="offerLetter"
-          name="offerLetter"
-          type="file"
-          accept="application/pdf,.pdf"
-          className="hidden"
-          onChange={(e) => setFileName(e.target.files?.[0]?.name ?? null)}
-        />
-      </div>
-
-      <div className="space-y-2">
-        <Label htmlFor="notes">Additional Notes (optional)</Label>
-        <Textarea
-          id="notes"
-          name="notes"
-          rows={3}
-          placeholder='e.g. "They said the salary is fixed and non-negotiable."'
-        />
-      </div>
-
-      {error && (
-        <p className="rounded-lg border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">
-          {error}
-        </p>
-      )}
-
-      <Button
-        type="submit"
-        size="lg"
-        disabled={submitting}
-        className="w-full text-base"
-      >
-        {submitting ? (
-          <>
-            <Loader2 className="animate-spin" /> Redirecting to secure checkout…
-          </>
-        ) : (
-          <>
-            Analyze My Offer — $9 <ArrowRight />
-          </>
+    <Card className="mx-auto max-w-xl overflow-hidden">
+      <CardContent className="p-6 sm:p-8">
+        {/* Progress (hidden on intro) */}
+        {step > 0 && (
+          <div className="mb-7">
+            <div className="mb-2 flex items-center justify-between text-xs text-muted-foreground">
+              <span>
+                Step {step} of {TOTAL_STEPS}
+              </span>
+              <span>{Math.round((step / TOTAL_STEPS) * 100)}% there</span>
+            </div>
+            <div className="h-1.5 w-full overflow-hidden rounded-full bg-secondary">
+              <motion.div
+                className="h-full rounded-full bg-primary"
+                initial={false}
+                animate={{ width: `${(step / TOTAL_STEPS) * 100}%` }}
+                transition={{ type: "spring", stiffness: 180, damping: 24 }}
+              />
+            </div>
+          </div>
         )}
-      </Button>
 
-      <p className="text-center text-xs text-muted-foreground">
-        Secure one-time payment via Stripe · No account needed · We don&apos;t
-        store your offer details.
-      </p>
-    </form>
+        <AnimatePresence mode="wait" custom={dir}>
+          <motion.div
+            key={step}
+            custom={dir}
+            variants={slide}
+            initial="enter"
+            animate="center"
+            exit="exit"
+            transition={{ duration: 0.28, ease: "easeInOut" }}
+          >
+            {step === 0 && (
+              <div className="space-y-6 text-center">
+                <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-xl bg-primary/15 text-primary">
+                  <Sparkles className="h-6 w-6" />
+                </div>
+                <div className="space-y-2">
+                  <h2 className="text-2xl font-bold tracking-tight">
+                    Ready to find your real market rate?
+                  </h2>
+                  <p className="text-sm text-muted-foreground">
+                    Answer a few quick questions. Takes about 60 seconds.
+                  </p>
+                </div>
+                <div className="space-y-3 text-left">
+                  {[
+                    { Icon: Clock, text: "60 seconds, 3 short steps" },
+                    { Icon: FileCheck, text: "Market range + exact counter-offer number" },
+                    { Icon: Mail, text: "A ready-to-send negotiation email" },
+                  ].map(({ Icon, text }) => (
+                    <div key={text} className="flex items-center gap-3 text-sm">
+                      <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                        <Icon className="h-4 w-4" />
+                      </span>
+                      {text}
+                    </div>
+                  ))}
+                </div>
+                <Button size="lg" className="w-full text-base" onClick={() => goTo(1, 1)}>
+                  Let&apos;s go <ArrowRight />
+                </Button>
+              </div>
+            )}
+
+            {step === 1 && (
+              <div className="space-y-5">
+                <StepHeading title="Tell us about the role" subtitle="The basics first." />
+                <Field label="Job Title" htmlFor="jobTitle">
+                  <Input
+                    id="jobTitle"
+                    autoFocus
+                    value={fields.jobTitle}
+                    onChange={set("jobTitle")}
+                    placeholder="Senior Software Engineer"
+                  />
+                </Field>
+                <Field label="Company Name" htmlFor="companyName">
+                  <Input
+                    id="companyName"
+                    value={fields.companyName}
+                    onChange={set("companyName")}
+                    placeholder="Acme Inc."
+                  />
+                </Field>
+              </div>
+            )}
+
+            {step === 2 && (
+              <div className="space-y-5">
+                <StepHeading title="The numbers" subtitle="This is how we find your market rate." />
+                <div className="grid gap-5 sm:grid-cols-2">
+                  <Field label="Offered Base Salary (USD)" htmlFor="salary">
+                    <Input
+                      id="salary"
+                      type="number"
+                      min={0}
+                      autoFocus
+                      value={fields.salary}
+                      onChange={set("salary")}
+                      placeholder="140000"
+                    />
+                  </Field>
+                  <Field label="Years of Experience" htmlFor="yearsOfExperience">
+                    <Input
+                      id="yearsOfExperience"
+                      type="number"
+                      min={0}
+                      max={60}
+                      value={fields.yearsOfExperience}
+                      onChange={set("yearsOfExperience")}
+                      placeholder="6"
+                    />
+                  </Field>
+                </div>
+                <Field label="City / Metro Area" htmlFor="city">
+                  <Input
+                    id="city"
+                    value={fields.city}
+                    onChange={set("city")}
+                    placeholder="San Francisco, CA"
+                  />
+                </Field>
+              </div>
+            )}
+
+            {step === 3 && (
+              <div className="space-y-5">
+                <StepHeading
+                  title="Anything else? (optional)"
+                  subtitle="Add your offer letter for bonus, equity & benefits context."
+                />
+                <div className="space-y-2">
+                  <Label htmlFor="offerLetter">Upload Offer Letter (PDF)</Label>
+                  <label
+                    htmlFor="offerLetter"
+                    className="flex cursor-pointer items-center gap-3 rounded-lg border border-dashed border-input bg-background px-3 py-3 text-sm text-muted-foreground transition-colors hover:border-primary/40"
+                  >
+                    <Upload className="h-4 w-4" />
+                    <span className="truncate">
+                      {file?.name ?? "Drop a PDF to extract bonus, equity & benefits"}
+                    </span>
+                  </label>
+                  <input
+                    id="offerLetter"
+                    type="file"
+                    accept="application/pdf,.pdf"
+                    className="hidden"
+                    onChange={(e) => setFile(e.target.files?.[0] ?? null)}
+                  />
+                </div>
+                <Field label="Additional Notes" htmlFor="notes">
+                  <Textarea
+                    id="notes"
+                    rows={3}
+                    value={fields.notes}
+                    onChange={set("notes")}
+                    placeholder='e.g. "They said the salary is fixed and non-negotiable."'
+                  />
+                </Field>
+              </div>
+            )}
+          </motion.div>
+        </AnimatePresence>
+
+        {/* Step-level validation */}
+        {stepError && step > 0 && (
+          <p className="mt-4 text-sm text-destructive">{stepError}</p>
+        )}
+        {error && (
+          <p className="mt-4 rounded-lg border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+            {error}
+          </p>
+        )}
+
+        {/* Navigation */}
+        {step > 0 && (
+          <div className="mt-7 flex items-center gap-3">
+            <Button
+              variant="outline"
+              size="lg"
+              onClick={() => goTo(step - 1, -1)}
+              disabled={submitting}
+              className="shrink-0"
+            >
+              <ArrowLeft />
+            </Button>
+
+            {step < TOTAL_STEPS ? (
+              <Button size="lg" className="flex-1 text-base" onClick={next}>
+                Continue <ArrowRight />
+              </Button>
+            ) : (
+              <Button
+                size="lg"
+                className="flex-1 text-base"
+                onClick={handleSubmit}
+                disabled={submitting}
+              >
+                {submitting ? (
+                  <>
+                    <Loader2 className="animate-spin" /> Redirecting to checkout…
+                  </>
+                ) : (
+                  <>
+                    Analyze My Offer — $9 <ArrowRight />
+                  </>
+                )}
+              </Button>
+            )}
+          </div>
+        )}
+
+        {step > 0 && (
+          <p className="mt-4 text-center text-xs text-muted-foreground">
+            Secure one-time payment via Stripe · No account · We don&apos;t store
+            your offer details.
+          </p>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
+function StepHeading({ title, subtitle }: { title: string; subtitle: string }) {
+  return (
+    <div className="space-y-1">
+      <h3 className="text-lg font-semibold">{title}</h3>
+      <p className="text-sm text-muted-foreground">{subtitle}</p>
+    </div>
+  );
+}
+
+function Field({
+  label,
+  htmlFor,
+  children,
+}: {
+  label: string;
+  htmlFor: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="space-y-2">
+      <Label htmlFor={htmlFor}>{label}</Label>
+      {children}
+    </div>
   );
 }

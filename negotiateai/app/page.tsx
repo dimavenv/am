@@ -1,4 +1,4 @@
-import { AlertTriangle, Check } from "lucide-react";
+import { AlertTriangle, Check, Star } from "lucide-react";
 
 import { OfferForm } from "@/components/OfferForm";
 import { Card, CardContent } from "@/components/ui/card";
@@ -107,6 +107,11 @@ export default function Home({
           {TESTIMONIALS.map((t) => (
             <Card key={t.name}>
               <CardContent className="space-y-4 p-6">
+                <div className="flex gap-0.5 text-primary">
+                  {Array.from({ length: 5 }).map((_, i) => (
+                    <Star key={i} className="h-3.5 w-3.5 fill-current" />
+                  ))}
+                </div>
                 <p className="text-sm leading-relaxed text-foreground/90">
                   “{t.quote}”
                 </p>
@@ -139,19 +144,7 @@ export default function Home({
 
         {/* Form */}
         <section id="analyze" className="scroll-mt-8 py-8">
-          <Card className="mx-auto max-w-xl">
-            <CardContent className="p-6 sm:p-8">
-              <div className="mb-6 text-center">
-                <h2 className="text-2xl font-bold tracking-tight">
-                  Analyze your offer
-                </h2>
-                <p className="mt-1 text-sm text-muted-foreground">
-                  Fill this out and get your full analysis right after payment.
-                </p>
-              </div>
-              <OfferForm />
-            </CardContent>
-          </Card>
+          <OfferForm />
         </section>
 
         {/* FAQ */}
