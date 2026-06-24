@@ -16,30 +16,39 @@ ready-to-send negotiation email. No account, no database.
 
 ## How payment works (Boosty + access codes)
 
-Boosty has no API to confirm a one-off payment server-side, so access is gated
-by **codes**:
+Boosty has no payment API, so access is gated by **signed codes**. Delivery is
+fully automatic — no Telegram, no manual DMs:
 
-1. You mint signed codes and sell them on Boosty (a paid post / subscription /
-   DM to buyers).
-2. On the unlock step the user clicks **“Get my access code on Boosty”**
-   (`NEXT_PUBLIC_BOOSTY_URL`) and pastes the code.
-3. `POST /api/analyze` verifies the code's HMAC signature **and** that it hasn't
-   been used, then calls the AI and returns the result. The code is only burned
-   on a successful analysis (a server hiccup never wastes a buyer's code).
+### Recommended setup: static code inside a paid Boosty post (zero maintenance)
 
-Codes look like `NEGO-7Q2KX9AB-3F9C2A1B` and are validated with no database via
-`ACCESS_CODE_SECRET`. Single-use is enforced in memory by default, or durably
-with Upstash Redis if configured.
+1. Set `ACCESS_CODE_STATIC=YOUR-SECRET-CODE` in your environment.
+2. Create a **paid post** on Boosty (one-time purchase or subscription tier).
+3. Put the static code in the **body** of that post — Boosty's paywall hides it
+   until the buyer pays.
+4. Set `NEXT_PUBLIC_BOOSTY_URL` to the direct link to that post.
 
-There's also an optional `ACCESS_CODE_STATIC` (a single shared code, e.g. placed
-inside a subscribers-only Boosty post) — accepted in addition to signed codes,
-but not single-use.
+**Buyer flow:**
+- Clicks “Pay $9 and get my code on Boosty” → lands on the Boosty post
+- Pays → Boosty immediately reveals the post body with the code
+- Copies the code, pastes it back on the site → analysis runs instantly
 
-### Minting codes
+No waiting, no manual steps, no Telegram.
+
+### Advanced: unique per-buyer signed codes (more secure)
+
+Mint a batch of HMAC-signed, single-use codes and distribute them via email
+automation (e.g. Boosty → Make.com → email):
 
 ```bash
 ACCESS_CODE_SECRET=your-secret node scripts/gen-codes.mjs 50
 ```
+
+Codes look like `NEGO-7Q2KX9AB-3F9C2A1B`. The server verifies the HMAC
+signature and burns the code only after a successful analysis (a server hiccup
+never wastes a buyer's code). Single-use is enforced in memory by default, or
+durably with Upstash Redis if configured.
+
+Both modes (static + signed) are accepted simultaneously.
 
 ## How a run works
 

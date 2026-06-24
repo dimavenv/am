@@ -346,13 +346,33 @@ export function OfferForm() {
                     <KeyRound className="h-6 w-6" />
                   </div>
                   <h3 className="text-xl font-bold tracking-tight">
-                    Unlock your analysis
+                    One payment, instant access
                   </h3>
-                  <p className="text-sm text-muted-foreground">
-                    Get an access code on Boosty, then paste it below. Your full
-                    analysis appears instantly.
-                  </p>
                 </div>
+
+                <ol className="space-y-3">
+                  {[
+                    {
+                      n: "1",
+                      text: "Click the button below — pay $9 on Boosty (card, Apple Pay, etc.)",
+                    },
+                    {
+                      n: "2",
+                      text: "Boosty instantly reveals your access code inside the post",
+                    },
+                    {
+                      n: "3",
+                      text: "Copy the code and paste it here — your analysis appears in seconds",
+                    },
+                  ].map(({ n, text }) => (
+                    <li key={n} className="flex gap-3 text-sm">
+                      <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary/15 text-xs font-bold text-primary">
+                        {n}
+                      </span>
+                      <span className="text-muted-foreground">{text}</span>
+                    </li>
+                  ))}
+                </ol>
 
                 <a
                   href={BOOSTY_URL}
@@ -360,10 +380,11 @@ export function OfferForm() {
                   rel="noopener noreferrer"
                   className="flex w-full items-center justify-center gap-2 rounded-lg border border-primary/40 bg-primary/[0.08] px-4 py-3 text-sm font-medium text-primary transition-colors hover:bg-primary/[0.14]"
                 >
-                  Get my access code on Boosty <ExternalLink className="h-4 w-4" />
+                  Pay $9 and get my code on Boosty{" "}
+                  <ExternalLink className="h-4 w-4" />
                 </a>
 
-                <Field label="Access code" htmlFor="code">
+                <Field label="Paste your access code" htmlFor="code">
                   <Input
                     id="code"
                     autoFocus
