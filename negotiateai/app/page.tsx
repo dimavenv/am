@@ -48,7 +48,7 @@ const FAQS = [
   },
   {
     q: "What if I'm not happy with the results?",
-    a: "Email us at support@negotiateai.com for a full refund. No questions asked.",
+    a: "Email us at support@negotiateai.site for a full refund. No questions asked.",
   },
   {
     q: "Is my data private?",
@@ -160,8 +160,8 @@ export default function Home() {
               Privacy Policy
             </a>{" "}
             ·{" "}
-            <a className="underline" href="mailto:contact@negotiateai.com">
-              contact@negotiateai.com
+            <a className="underline" href="mailto:contact@negotiateai.site">
+              contact@negotiateai.site
             </a>
           </p>
         </footer>

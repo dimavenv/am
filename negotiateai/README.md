@@ -37,7 +37,7 @@ you withdraw in **crypto** (ideal for a US audience with a non-US payout).
 Webhook retries are idempotent: each `order_id`'s code is recorded, so a
 re-delivered webhook never mints or emails a second code.
 
-> Set the Cryptomus **webhook/callback** to `https://YOUR_DOMAIN/api/payment-webhook`
+> Set the Cryptomus **webhook/callback** to `https://negotiateai.site/api/payment-webhook`
 > (the app sends this as `url_callback` automatically from `NEXT_PUBLIC_BASE_URL`,
 > so it must be your real, publicly reachable domain in production).
 
@@ -119,7 +119,7 @@ scripts/gen-codes.mjs     Mint signed access codes
    `CRYPTOMUS_MERCHANT_ID`, `CRYPTOMUS_API_KEY`, `RESEND_API_KEY`, `EMAIL_FROM`,
    and `NEXT_PUBLIC_BASE_URL` set to your real domain).
 3. In the Cryptomus dashboard, set the webhook URL to
-   `https://YOUR_DOMAIN/api/payment-webhook`.
+   `https://negotiateai.site/api/payment-webhook`.
 4. For durable codes/orders across deploys, add an Upstash Redis integration and
    set the two `UPSTASH_*` vars (recommended in production).
 

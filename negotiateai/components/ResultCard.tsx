@@ -162,8 +162,8 @@ export function ResultCard({ result }: { result: ResultResponse }) {
       >
         <ShieldCheck className="h-3.5 w-3.5" />
         Not happy? Email{" "}
-        <a className="underline" href="mailto:support@negotiateai.com">
-          support@negotiateai.com
+        <a className="underline" href="mailto:support@negotiateai.site">
+          support@negotiateai.site
         </a>{" "}
         for a full refund.
       </motion.p>

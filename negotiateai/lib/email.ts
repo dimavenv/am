@@ -8,7 +8,7 @@ export async function sendCodeEmail(to: string, code: string): Promise<void> {
   if (!apiKey) throw new Error("RESEND_API_KEY is not set");
 
   const from = process.env.EMAIL_FROM || "NegotiateAI <onboarding@resend.dev>";
-  const appUrl = process.env.NEXT_PUBLIC_BASE_URL || "https://negotiateai.app";
+  const appUrl = process.env.NEXT_PUBLIC_BASE_URL || "https://negotiateai.site";
 
   const subject = "Your NegotiateAI access code";
   const text = `Thanks for your purchase!

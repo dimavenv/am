@@ -418,7 +418,7 @@ export function OfferReportPDF({ result }: { result: ResultResponse }) {
         <View style={s.footer} fixed>
           <Text style={s.footerBrand}>NegotiateAI</Text>
           <Text style={s.footerText}>
-            Not financial advice · negotiateai.com
+            Not financial advice · negotiateai.site
           </Text>
           <Text
             style={s.footerText}

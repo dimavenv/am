@@ -16,7 +16,7 @@ export function getOpenAI(): OpenAI {
       apiKey: key,
       baseURL: "https://openrouter.ai/api/v1",
       defaultHeaders: {
-        "HTTP-Referer": process.env.NEXT_PUBLIC_BASE_URL || "https://negotiateai.com",
+        "HTTP-Referer": process.env.NEXT_PUBLIC_BASE_URL || "https://negotiateai.site",
         "X-Title": "NegotiateAI",
       },
     });

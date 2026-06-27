@@ -8,7 +8,7 @@ const inter = Inter({
   display: "swap",
 });
 
-const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "https://negotiateai.com";
+const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "https://negotiateai.site";
 
 export const metadata: Metadata = {
   metadataBase: new URL(baseUrl),
