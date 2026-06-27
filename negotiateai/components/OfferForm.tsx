@@ -380,8 +380,8 @@ export function OfferForm() {
                     One payment, instant access
                   </h3>
                   <p className="text-sm text-muted-foreground">
-                    Pay $9 by card or crypto. We email your access code the moment
-                    payment confirms — paste it here and your analysis appears.
+                    Pay $9 securely. We email your access code the moment payment
+                    confirms — paste it here and your analysis appears.
                   </p>
                 </div>
 
@@ -413,7 +413,7 @@ export function OfferForm() {
                     </>
                   ) : (
                     <>
-                      <CreditCard /> Pay $9 — card or crypto
+                      <CreditCard /> Pay $9 — secure checkout
                     </>
                   )}
                 </Button>
@@ -491,8 +491,7 @@ export function OfferForm() {
 
         {step > 0 && (
           <p className="mt-4 text-center text-xs text-muted-foreground">
-            Paid once · card or crypto · No account · We don&apos;t store your
-            offer details.
+            Paid once · No account · We don&apos;t store your offer details.
           </p>
         )}
       </CardContent>

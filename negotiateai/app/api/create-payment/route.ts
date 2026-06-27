@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import crypto from "node:crypto";
 
-import { createInvoice } from "@/lib/cryptomus";
+import { createInvoice } from "@/lib/trybit";
+import { encodeOrderId } from "@/lib/order";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -10,14 +10,6 @@ const PRICE_USD = process.env.PRICE_USD || "9.00";
 
 function isValidEmail(email: string): boolean {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) && email.length <= 254;
-}
-
-function baseUrl(req: NextRequest): string {
-  const env = process.env.NEXT_PUBLIC_BASE_URL?.replace(/\/$/, "");
-  if (env) return env;
-  const host = req.headers.get("x-forwarded-host") || req.headers.get("host");
-  const proto = req.headers.get("x-forwarded-proto") || "https";
-  return `${proto}://${host}`;
 }
 
 export async function POST(req: NextRequest) {
@@ -36,17 +28,12 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  const base = baseUrl(req);
-  const orderId = crypto.randomUUID();
+  // The email is encoded (signed) into the order id so the webhook can recover
+  // who to send the code to — no shared store needed between the two calls.
+  const orderId = encodeOrderId(email);
 
   try {
-    const url = await createInvoice({
-      orderId,
-      amount: PRICE_USD,
-      email,
-      returnUrl: `${base}/?paid=1#analyze`,
-      callbackUrl: `${base}/api/payment-webhook`,
-    });
+    const url = await createInvoice({ orderId, amount: PRICE_USD, email });
     return NextResponse.json({ url });
   } catch (err) {
     console.error("create-payment error:", err);

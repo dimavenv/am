@@ -9,37 +9,54 @@ ready-to-send negotiation email. No account, no database.
 - **Next.js 14** (App Router) + **TypeScript**
 - **Tailwind CSS** + shadcn/ui-style components (dark fintech theme)
 - **OpenRouter** (default `openai/gpt-4o-mini`) for the analysis
-- **Cryptomus** for payment (card or crypto in, crypto out) — see below
+- **TryBit** (CryptoCloud) for payment — see below
 - **Resend** for automatic code delivery by email
 - **pdf-parse** for optional offer-letter PDF extraction
 - **@react-pdf/renderer** for the downloadable PDF report
 - Deploys to **Vercel**
 
-## How payment works (Cryptomus + auto-emailed codes)
+## How payment works (TryBit + auto-emailed codes)
 
 Payment and code delivery are **fully automatic** — no Telegram, no manual DMs.
-[Cryptomus](https://cryptomus.com) lets buyers pay by **card or crypto** while
-you withdraw in **crypto** (ideal for a US audience with a non-US payout).
+[TryBit](https://trybit.com) (a CryptoCloud-based gateway) hosts the checkout and
+calls us back when the payment settles.
 
 **Buyer flow:**
 
 1. On the unlock step the buyer enters their **email** and clicks **Pay $9**.
-2. `POST /api/create-payment` creates a Cryptomus invoice and opens its hosted
-   checkout in a new tab.
-3. The buyer pays (card / USDT / BTC / …).
-4. Cryptomus calls `POST /api/payment-webhook` server-to-server. We verify the
-   signature, **mint a unique single-use code** (`NEGO-…`), and **email it** via
-   Resend to the address from step 1.
-5. The buyer pastes the code back on the still-open form → analysis runs
-   instantly. `POST /api/analyze` validates the code's HMAC signature and burns
-   it only after a successful analysis (a server hiccup never wastes a code).
+2. `POST /api/create-payment` creates a TryBit invoice and opens its hosted
+   checkout in a new tab. The buyer's email is signed into the `order_id` so the
+   webhook can recover it with no shared database.
+3. The buyer pays.
+4. TryBit POSTs to `POST /api/payment-webhook`. We **verify the postback JWT**
+   against the project secret, **mint a unique single-use code** (`NEGO-…`), and
+   **email it** via Resend to the buyer.
+5. The buyer returns to the still-open form (a "check your email" banner shows),
+   pastes the code → analysis runs instantly. `POST /api/analyze` validates the
+   code's HMAC signature and burns it only after a successful analysis (a server
+   hiccup never wastes a code).
 
 Webhook retries are idempotent: each `order_id`'s code is recorded, so a
-re-delivered webhook never mints or emails a second code.
+re-delivered postback never mints or emails a second code.
 
-> Set the Cryptomus **webhook/callback** to `https://negotiateai.site/api/payment-webhook`
-> (the app sends this as `url_callback` automatically from `NEXT_PUBLIC_BASE_URL`,
-> so it must be your real, publicly reachable domain in production).
+### TryBit dashboard setup
+
+In your TryBit project settings set the notification/postback URL to:
+
+```
+https://negotiateai.site/api/payment-webhook
+```
+
+and the success / fail return URLs to:
+
+```
+https://negotiateai.site/?paid=1#analyze
+https://negotiateai.site/?paid=0#analyze
+```
+
+Then copy your **API key**, **Shop ID**, and **Secret** into the env vars below.
+If TryBit's API host differs from the CryptoCloud default, set `TRYBIT_API_BASE`
+to the base URL from their docs (keep the `/v2` suffix).
 
 ### Pre-minting / static codes (optional)
 
@@ -74,7 +91,7 @@ Open http://localhost:3000. To test the unlock step without paying, mint a code
 with the command above (using the same `ACCESS_CODE_SECRET`) and paste it in the
 "Already have a code?" field. To test the full payment + email loop locally,
 expose your dev server with a tunnel (e.g. `ngrok`) and point
-`NEXT_PUBLIC_BASE_URL` + the Cryptomus webhook at the tunnel URL.
+`NEXT_PUBLIC_BASE_URL` + the TryBit postback URL at the tunnel URL.
 
 ## Environment variables
 
@@ -82,16 +99,18 @@ expose your dev server with a tunnel (e.g. `ngrok`) and point
 | --------------------------- | ---------------------------------------------------- |
 | `OPENROUTER_API_KEY`        | AI calls via OpenRouter                              |
 | `OPENROUTER_MODEL`          | Optional model override (default gpt-4o-mini)        |
-| `CRYPTOMUS_MERCHANT_ID`     | Cryptomus merchant id                                |
-| `CRYPTOMUS_API_KEY`         | Cryptomus payment API key (signs requests/webhooks)  |
+| `TRYBIT_API_KEY`            | TryBit API key (auth for creating invoices)          |
+| `TRYBIT_SHOP_ID`            | TryBit shop/project id                               |
+| `TRYBIT_SECRET`             | TryBit project secret (verifies postback JWTs)       |
+| `TRYBIT_API_BASE`           | Optional API base override (default CryptoCloud /v2) |
 | `PRICE_USD`                 | Optional price per analysis (default 9.00)           |
 | `RESEND_API_KEY`            | Resend key for emailing codes                         |
 | `EMAIL_FROM`                | Verified Resend sender for the code email            |
-| `ACCESS_CODE_SECRET`        | Mints & verifies signed single-use codes            |
+| `ACCESS_CODE_SECRET`        | Mints/verifies codes + signs the order id            |
 | `ACCESS_CODE_STATIC`        | Optional shared code (not single-use)               |
 | `UPSTASH_REDIS_REST_URL`    | Optional — durable single-use + order storage        |
 | `UPSTASH_REDIS_REST_TOKEN`  | Optional — Upstash auth token                        |
-| `NEXT_PUBLIC_BASE_URL`      | Public domain — return/callback URLs, OG, email links |
+| `NEXT_PUBLIC_BASE_URL`      | Public domain — return URLs, OG, email links         |
 
 ## Project structure
 
@@ -102,12 +121,12 @@ app/
   opengraph-image.tsx     Generated OG image (1200×630)
   result/page.tsx         Results page (reads result from sessionStorage)
   api/analyze/            Validates access code + calls the AI
-  api/create-payment/     Creates a Cryptomus invoice for the buyer
-  api/payment-webhook/    Verifies payment, mints a code, emails it
+  api/create-payment/     Creates a TryBit invoice for the buyer
+  api/payment-webhook/    Verifies the postback JWT, mints a code, emails it
 components/               OfferForm, ResultCard, RatingBadge, OfferGauge,
-  pdf/OfferReport.tsx     EmailDraft, DownloadPDFButton, AnalyzingChart, …
+  pdf/OfferReport.tsx     PaidBanner, DownloadPDFButton, AnalyzingChart, …
   ui/                     Button, Card, Badge, Input, Label, Textarea
-lib/                      openai (OpenRouter), accessCodes, cryptomus, email,
+lib/                      openai (OpenRouter), accessCodes, trybit, order, email,
                           types, utils, storage
 scripts/gen-codes.mjs     Mint signed access codes
 ```
@@ -116,12 +135,14 @@ scripts/gen-codes.mjs     Mint signed access codes
 
 1. Push to GitHub and import the repo in Vercel.
 2. Add the env vars above (at minimum `OPENROUTER_API_KEY`, `ACCESS_CODE_SECRET`,
-   `CRYPTOMUS_MERCHANT_ID`, `CRYPTOMUS_API_KEY`, `RESEND_API_KEY`, `EMAIL_FROM`,
-   and `NEXT_PUBLIC_BASE_URL` set to your real domain).
-3. In the Cryptomus dashboard, set the webhook URL to
-   `https://negotiateai.site/api/payment-webhook`.
-4. For durable codes/orders across deploys, add an Upstash Redis integration and
-   set the two `UPSTASH_*` vars (recommended in production).
+   `TRYBIT_API_KEY`, `TRYBIT_SHOP_ID`, `TRYBIT_SECRET`, `RESEND_API_KEY`,
+   `EMAIL_FROM`, and `NEXT_PUBLIC_BASE_URL` set to your real domain).
+3. In the TryBit dashboard, set the postback URL to
+   `https://negotiateai.site/api/payment-webhook` and the return URLs to
+   `https://negotiateai.site/?paid=1#analyze` (success) and `…?paid=0#analyze`
+   (fail).
+4. For durable single-use enforcement across deploys, add an Upstash Redis
+   integration and set the two `UPSTASH_*` vars (recommended in production).
 
 > ⚠️ The landing page ships with sample testimonials and a "10,000+ offers
 > analyzed" trust line. Replace these with real, substantiated numbers before

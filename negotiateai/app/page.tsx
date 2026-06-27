@@ -1,6 +1,8 @@
+import { Suspense } from "react";
 import { Check, Star } from "lucide-react";
 
 import { OfferForm } from "@/components/OfferForm";
+import { PaidBanner } from "@/components/PaidBanner";
 import { Card, CardContent } from "@/components/ui/card";
 
 const TESTIMONIALS = [
@@ -129,6 +131,9 @@ export default function Home() {
 
         {/* Form */}
         <section id="analyze" className="scroll-mt-8 py-8">
+          <Suspense fallback={null}>
+            <PaidBanner />
+          </Suspense>
           <OfferForm />
         </section>
 
