@@ -7,9 +7,10 @@ import {
   ArrowLeft,
   ArrowRight,
   Clock,
-  ExternalLink,
+  CreditCard,
   FileCheck,
   KeyRound,
+  Loader2,
   Mail,
   Sparkles,
   Upload,
@@ -44,8 +45,9 @@ const EMPTY: Fields = {
 const DATA_STEPS = 3; // steps that fill the progress bar
 const UNLOCK_STEP = 4;
 
-const BOOSTY_URL =
-  process.env.NEXT_PUBLIC_BOOSTY_URL || "https://boosty.to";
+function isValidEmail(email: string): boolean {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+}
 
 function fileToBase64(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
@@ -73,6 +75,9 @@ export function OfferForm() {
   const [fields, setFields] = useState<Fields>(EMPTY);
   const [file, setFile] = useState<File | null>(null);
   const [code, setCode] = useState("");
+  const [email, setEmail] = useState("");
+  const [paying, setPaying] = useState(false);
+  const [payError, setPayError] = useState<string | null>(null);
   const [stepError, setStepError] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -106,6 +111,32 @@ export function OfferForm() {
     const err = validateStep(step);
     if (err) return setStepError(err);
     goTo(step + 1, 1);
+  }
+
+  async function startPayment() {
+    if (!isValidEmail(email.trim())) {
+      setPayError("Enter a valid email so we can send your code.");
+      return;
+    }
+    setPayError(null);
+    setPaying(true);
+    try {
+      const res = await fetch("/api/create-payment", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: email.trim() }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || !data.url) {
+        throw new Error(data.error || "Couldn't start the payment.");
+      }
+      // Open in a new tab so this form (and the user's answers) stays put.
+      window.open(data.url, "_blank", "noopener,noreferrer");
+    } catch (err) {
+      setPayError(err instanceof Error ? err.message : "Couldn't start payment.");
+    } finally {
+      setPaying(false);
+    }
   }
 
   async function handleAnalyze() {
@@ -348,46 +379,60 @@ export function OfferForm() {
                   <h3 className="text-xl font-bold tracking-tight">
                     One payment, instant access
                   </h3>
+                  <p className="text-sm text-muted-foreground">
+                    Pay $9 by card or crypto. We email your access code the moment
+                    payment confirms — paste it here and your analysis appears.
+                  </p>
                 </div>
 
-                <ol className="space-y-3">
-                  {[
-                    {
-                      n: "1",
-                      text: "Click the button below — pay $9 on Boosty (card, Apple Pay, etc.)",
-                    },
-                    {
-                      n: "2",
-                      text: "Boosty instantly reveals your access code inside the post",
-                    },
-                    {
-                      n: "3",
-                      text: "Copy the code and paste it here — your analysis appears in seconds",
-                    },
-                  ].map(({ n, text }) => (
-                    <li key={n} className="flex gap-3 text-sm">
-                      <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary/15 text-xs font-bold text-primary">
-                        {n}
-                      </span>
-                      <span className="text-muted-foreground">{text}</span>
-                    </li>
-                  ))}
-                </ol>
+                <Field label="Email for your access code" htmlFor="email">
+                  <Input
+                    id="email"
+                    type="email"
+                    inputMode="email"
+                    autoComplete="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") startPayment();
+                    }}
+                    placeholder="you@example.com"
+                    spellCheck={false}
+                  />
+                </Field>
 
-                <a
-                  href={BOOSTY_URL}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex w-full items-center justify-center gap-2 rounded-lg border border-primary/40 bg-primary/[0.08] px-4 py-3 text-sm font-medium text-primary transition-colors hover:bg-primary/[0.14]"
+                <Button
+                  size="lg"
+                  className="w-full text-base"
+                  onClick={startPayment}
+                  disabled={paying}
                 >
-                  Pay $9 and get my code on Boosty{" "}
-                  <ExternalLink className="h-4 w-4" />
-                </a>
+                  {paying ? (
+                    <>
+                      <Loader2 className="animate-spin" /> Opening checkout…
+                    </>
+                  ) : (
+                    <>
+                      <CreditCard /> Pay $9 — card or crypto
+                    </>
+                  )}
+                </Button>
+
+                {payError && (
+                  <p className="text-sm text-destructive">{payError}</p>
+                )}
+
+                <div className="flex items-center gap-3 pt-1">
+                  <div className="h-px flex-1 bg-border" />
+                  <span className="text-xs text-muted-foreground">
+                    Already have a code?
+                  </span>
+                  <div className="h-px flex-1 bg-border" />
+                </div>
 
                 <Field label="Paste your access code" htmlFor="code">
                   <Input
                     id="code"
-                    autoFocus
                     value={code}
                     onChange={(e) => setCode(e.target.value)}
                     onKeyDown={(e) => {
@@ -446,8 +491,8 @@ export function OfferForm() {
 
         {step > 0 && (
           <p className="mt-4 text-center text-xs text-muted-foreground">
-            Paid once via Boosty · No account · We don&apos;t store your offer
-            details.
+            Paid once · card or crypto · No account · We don&apos;t store your
+            offer details.
           </p>
         )}
       </CardContent>

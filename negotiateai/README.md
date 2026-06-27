@@ -9,53 +9,56 @@ ready-to-send negotiation email. No account, no database.
 - **Next.js 14** (App Router) + **TypeScript**
 - **Tailwind CSS** + shadcn/ui-style components (dark fintech theme)
 - **OpenRouter** (default `openai/gpt-4o-mini`) for the analysis
-- **Access codes** sold via **Boosty** for payment (see below)
+- **Cryptomus** for payment (card or crypto in, crypto out) — see below
+- **Resend** for automatic code delivery by email
 - **pdf-parse** for optional offer-letter PDF extraction
 - **@react-pdf/renderer** for the downloadable PDF report
 - Deploys to **Vercel**
 
-## How payment works (Boosty + access codes)
+## How payment works (Cryptomus + auto-emailed codes)
 
-Boosty has no payment API, so access is gated by **signed codes**. Delivery is
-fully automatic — no Telegram, no manual DMs:
-
-### Recommended setup: static code inside a paid Boosty post (zero maintenance)
-
-1. Set `ACCESS_CODE_STATIC=YOUR-SECRET-CODE` in your environment.
-2. Create a **paid post** on Boosty (one-time purchase or subscription tier).
-3. Put the static code in the **body** of that post — Boosty's paywall hides it
-   until the buyer pays.
-4. Set `NEXT_PUBLIC_BOOSTY_URL` to the direct link to that post.
+Payment and code delivery are **fully automatic** — no Telegram, no manual DMs.
+[Cryptomus](https://cryptomus.com) lets buyers pay by **card or crypto** while
+you withdraw in **crypto** (ideal for a US audience with a non-US payout).
 
 **Buyer flow:**
-- Clicks “Pay $9 and get my code on Boosty” → lands on the Boosty post
-- Pays → Boosty immediately reveals the post body with the code
-- Copies the code, pastes it back on the site → analysis runs instantly
 
-No waiting, no manual steps, no Telegram.
+1. On the unlock step the buyer enters their **email** and clicks **Pay $9**.
+2. `POST /api/create-payment` creates a Cryptomus invoice and opens its hosted
+   checkout in a new tab.
+3. The buyer pays (card / USDT / BTC / …).
+4. Cryptomus calls `POST /api/payment-webhook` server-to-server. We verify the
+   signature, **mint a unique single-use code** (`NEGO-…`), and **email it** via
+   Resend to the address from step 1.
+5. The buyer pastes the code back on the still-open form → analysis runs
+   instantly. `POST /api/analyze` validates the code's HMAC signature and burns
+   it only after a successful analysis (a server hiccup never wastes a code).
 
-### Advanced: unique per-buyer signed codes (more secure)
+Webhook retries are idempotent: each `order_id`'s code is recorded, so a
+re-delivered webhook never mints or emails a second code.
 
-Mint a batch of HMAC-signed, single-use codes and distribute them via email
-automation (e.g. Boosty → Make.com → email):
+> Set the Cryptomus **webhook/callback** to `https://YOUR_DOMAIN/api/payment-webhook`
+> (the app sends this as `url_callback` automatically from `NEXT_PUBLIC_BASE_URL`,
+> so it must be your real, publicly reachable domain in production).
+
+### Pre-minting / static codes (optional)
+
+You can still hand out codes manually (e.g. promos, support refunds):
 
 ```bash
 ACCESS_CODE_SECRET=your-secret node scripts/gen-codes.mjs 50
 ```
 
-Codes look like `NEGO-7Q2KX9AB-3F9C2A1B`. The server verifies the HMAC
-signature and burns the code only after a successful analysis (a server hiccup
-never wastes a buyer's code). Single-use is enforced in memory by default, or
-durably with Upstash Redis if configured.
-
-Both modes (static + signed) are accepted simultaneously.
+There's also an optional `ACCESS_CODE_STATIC` — a single shared code accepted in
+addition to signed codes (not single-use). Handy for testing or comps.
 
 ## How a run works
 
 1. User fills the multi-step form on `/` (role, numbers, optional PDF + notes).
-2. On the unlock step they enter a Boosty access code.
-3. `POST /api/analyze` validates the code, parses any PDF, calls the AI, returns
-   structured JSON (rating, market range, counter-offer, talking points, email).
+2. On the unlock step they pay via Cryptomus and receive a code by email.
+3. They paste the code; `POST /api/analyze` validates it, parses any PDF, calls
+   the AI, and returns structured JSON (rating, market range, counter-offer,
+   talking points, email).
 4. The result is stashed in `sessionStorage` and rendered on `/result` —
    animated reveal, market gauge, copyable email, and a **Download PDF** button.
 
@@ -67,8 +70,11 @@ cp .env.local.example .env.local   # then fill in your keys
 npm run dev
 ```
 
-Open http://localhost:3000. Mint a test code with the command above (using the
-same `ACCESS_CODE_SECRET`) to walk the full flow.
+Open http://localhost:3000. To test the unlock step without paying, mint a code
+with the command above (using the same `ACCESS_CODE_SECRET`) and paste it in the
+"Already have a code?" field. To test the full payment + email loop locally,
+expose your dev server with a tunnel (e.g. `ngrok`) and point
+`NEXT_PUBLIC_BASE_URL` + the Cryptomus webhook at the tunnel URL.
 
 ## Environment variables
 
@@ -76,12 +82,16 @@ same `ACCESS_CODE_SECRET`) to walk the full flow.
 | --------------------------- | ---------------------------------------------------- |
 | `OPENROUTER_API_KEY`        | AI calls via OpenRouter                              |
 | `OPENROUTER_MODEL`          | Optional model override (default gpt-4o-mini)        |
-| `NEXT_PUBLIC_BOOSTY_URL`    | Link behind the “Get my access code” button         |
+| `CRYPTOMUS_MERCHANT_ID`     | Cryptomus merchant id                                |
+| `CRYPTOMUS_API_KEY`         | Cryptomus payment API key (signs requests/webhooks)  |
+| `PRICE_USD`                 | Optional price per analysis (default 9.00)           |
+| `RESEND_API_KEY`            | Resend key for emailing codes                         |
+| `EMAIL_FROM`                | Verified Resend sender for the code email            |
 | `ACCESS_CODE_SECRET`        | Mints & verifies signed single-use codes            |
 | `ACCESS_CODE_STATIC`        | Optional shared code (not single-use)               |
-| `UPSTASH_REDIS_REST_URL`    | Optional — durable single-use storage               |
+| `UPSTASH_REDIS_REST_URL`    | Optional — durable single-use + order storage        |
 | `UPSTASH_REDIS_REST_TOKEN`  | Optional — Upstash auth token                        |
-| `NEXT_PUBLIC_BASE_URL`      | Base URL for OG metadata                             |
+| `NEXT_PUBLIC_BASE_URL`      | Public domain — return/callback URLs, OG, email links |
 
 ## Project structure
 
@@ -92,10 +102,13 @@ app/
   opengraph-image.tsx     Generated OG image (1200×630)
   result/page.tsx         Results page (reads result from sessionStorage)
   api/analyze/            Validates access code + calls the AI
+  api/create-payment/     Creates a Cryptomus invoice for the buyer
+  api/payment-webhook/    Verifies payment, mints a code, emails it
 components/               OfferForm, ResultCard, RatingBadge, OfferGauge,
   pdf/OfferReport.tsx     EmailDraft, DownloadPDFButton, AnalyzingChart, …
   ui/                     Button, Card, Badge, Input, Label, Textarea
-lib/                      openai (OpenRouter), accessCodes, types, utils, storage
+lib/                      openai (OpenRouter), accessCodes, cryptomus, email,
+                          types, utils, storage
 scripts/gen-codes.mjs     Mint signed access codes
 ```
 
@@ -103,9 +116,12 @@ scripts/gen-codes.mjs     Mint signed access codes
 
 1. Push to GitHub and import the repo in Vercel.
 2. Add the env vars above (at minimum `OPENROUTER_API_KEY`, `ACCESS_CODE_SECRET`,
-   `NEXT_PUBLIC_BOOSTY_URL`).
-3. For durable single-use codes across deploys, add an Upstash Redis integration
-   and set the two `UPSTASH_*` vars.
+   `CRYPTOMUS_MERCHANT_ID`, `CRYPTOMUS_API_KEY`, `RESEND_API_KEY`, `EMAIL_FROM`,
+   and `NEXT_PUBLIC_BASE_URL` set to your real domain).
+3. In the Cryptomus dashboard, set the webhook URL to
+   `https://YOUR_DOMAIN/api/payment-webhook`.
+4. For durable codes/orders across deploys, add an Upstash Redis integration and
+   set the two `UPSTASH_*` vars (recommended in production).
 
 > ⚠️ The landing page ships with sample testimonials and a "10,000+ offers
 > analyzed" trust line. Replace these with real, substantiated numbers before

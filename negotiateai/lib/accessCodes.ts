@@ -59,6 +59,25 @@ export async function consumeCode(serial: string): Promise<void> {
   await markConsumed(serial);
 }
 
+// ─── minting (server-side, used by the payment webhook) ────
+// Mirrors scripts/gen-codes.mjs so codes minted on a confirmed payment verify
+// identically in inspectCode().
+
+const ALPHABET = "0123456789ABCDEFGHJKMNPQRSTVWXYZ"; // Crockford base32
+
+function randomSerial(): string {
+  return Array.from(crypto.randomBytes(8))
+    .map((b) => ALPHABET[b % ALPHABET.length])
+    .join("");
+}
+
+export function mintCode(): string {
+  const secret = process.env.ACCESS_CODE_SECRET;
+  if (!secret) throw new Error("ACCESS_CODE_SECRET is not set");
+  const serial = randomSerial();
+  return `NEGO-${serial}-${sign(serial, secret)}`;
+}
+
 // ─── single-use store ──────────────────────────────────────
 // Uses Upstash Redis (REST) when configured for durable single-use across
 // deploys; otherwise falls back to in-process memory (resets on restart).
@@ -99,4 +118,38 @@ async function markConsumed(serial: string): Promise<void> {
     }
   }
   memory.add(serial);
+}
+
+// ─── order → code store (webhook idempotency) ─────────────
+// A payment provider can deliver the same webhook more than once. We record the
+// code minted for each order id so retries don't mint/email a second code.
+
+const orderMemory = new Map<string, string>();
+const orderKey = (id: string) => `nego:order:${id}`;
+
+export async function getOrderCode(orderId: string): Promise<string | null> {
+  if (REDIS_URL && REDIS_TOKEN) {
+    try {
+      const r = await upstash(["GET", orderKey(orderId)]);
+      return typeof r.result === "string" ? r.result : null;
+    } catch {
+      return orderMemory.get(orderId) ?? null;
+    }
+  }
+  return orderMemory.get(orderId) ?? null;
+}
+
+export async function recordOrderCode(
+  orderId: string,
+  code: string
+): Promise<void> {
+  if (REDIS_URL && REDIS_TOKEN) {
+    try {
+      await upstash(["SET", orderKey(orderId), code]);
+      return;
+    } catch {
+      // fall through to memory
+    }
+  }
+  orderMemory.set(orderId, code);
 }
