@@ -35,7 +35,9 @@ export async function POST(req: NextRequest) {
     // the try block to surface a clean error instead of a bare 500.
     const orderId = encodeOrderId(email);
     const url = await createInvoice({ orderId, amount: PRICE_USD, email });
-    return NextResponse.json({ url });
+    // Return the orderId too so the client can poll /api/check-payment and
+    // auto-unlock the moment the webhook records this order as paid.
+    return NextResponse.json({ url, orderId });
   } catch (err) {
     console.error("create-payment error:", err);
     return NextResponse.json(

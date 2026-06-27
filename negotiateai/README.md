@@ -29,15 +29,24 @@ calls us back when the payment settles.
    webhook can recover it with no shared database.
 3. The buyer pays.
 4. TryBit POSTs to `POST /api/payment-webhook`. We **verify the postback JWT**
-   against the project secret, **mint a unique single-use code** (`NEGO-…`), and
-   **email it** via Resend to the buyer.
-5. The buyer returns to the still-open form (a "check your email" banner shows),
-   pastes the code → analysis runs instantly. `POST /api/analyze` validates the
-   code's HMAC signature and burns it only after a successful analysis (a server
-   hiccup never wastes a code).
+   against the project secret, **mint a unique single-use code** (`NEGO-…`),
+   **record it against the order id**, and **email it** via Resend to the buyer.
+5. Meanwhile the still-open form tab **polls `GET /api/check-payment?order=…`**.
+   The moment the webhook records the order as paid, the poll returns the code
+   and the form **unlocks and runs the analysis automatically** — no copy-paste.
+   The emailed code is a backup (e.g. if the buyer closed the tab): they can
+   paste it into the "Already have a code?" field. `POST /api/analyze` validates
+   the code's HMAC signature and burns it only after a successful analysis (a
+   server hiccup never wastes a code).
 
 Webhook retries are idempotent: each `order_id`'s code is recorded, so a
 re-delivered postback never mints or emails a second code.
+
+> **Auto-unlock needs Upstash.** The webhook and the poll run on different
+> serverless invocations, so the order→code record must live in shared storage.
+> Set `UPSTASH_REDIS_REST_URL` / `UPSTASH_REDIS_REST_TOKEN` in production. Without
+> them the record sits in per-instance memory and the poll may never see it — the
+> emailed code still works as the fallback.
 
 ### TryBit dashboard setup
 

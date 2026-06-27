@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
 import {
@@ -77,7 +77,9 @@ export function OfferForm() {
   const [code, setCode] = useState("");
   const [email, setEmail] = useState("");
   const [paying, setPaying] = useState(false);
+  const [waiting, setWaiting] = useState(false);
   const [payError, setPayError] = useState<string | null>(null);
+  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const [stepError, setStepError] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -132,6 +134,8 @@ export function OfferForm() {
       }
       // Open in a new tab so this form (and the user's answers) stays put.
       window.open(data.url, "_blank", "noopener,noreferrer");
+      // Start watching for the payment to settle so we can unlock automatically.
+      if (data.orderId) startPolling(data.orderId);
     } catch (err) {
       setPayError(err instanceof Error ? err.message : "Couldn't start payment.");
     } finally {
@@ -139,8 +143,47 @@ export function OfferForm() {
     }
   }
 
-  async function handleAnalyze() {
-    if (!code.trim()) {
+  // Poll the server until the webhook records this order as paid, then unlock
+  // and run the analysis automatically — no copy-pasting the emailed code.
+  function startPolling(orderId: string) {
+    if (pollRef.current) clearInterval(pollRef.current);
+    setWaiting(true);
+    let attempts = 0;
+    const maxAttempts = 200; // 200 × 3s ≈ 10 minutes
+    pollRef.current = setInterval(async () => {
+      attempts += 1;
+      if (attempts > maxAttempts) {
+        stopPolling();
+        return;
+      }
+      try {
+        const res = await fetch(
+          `/api/check-payment?order=${encodeURIComponent(orderId)}`,
+          { cache: "no-store" }
+        );
+        const data = await res.json().catch(() => ({}));
+        if (data.paid && data.code) {
+          stopPolling();
+          setCode(data.code);
+          handleAnalyze(data.code);
+        }
+      } catch {
+        // transient — keep polling
+      }
+    }, 3000);
+  }
+
+  function stopPolling() {
+    if (pollRef.current) clearInterval(pollRef.current);
+    pollRef.current = null;
+    setWaiting(false);
+  }
+
+  useEffect(() => () => stopPolling(), []);
+
+  async function handleAnalyze(codeOverride?: string) {
+    const activeCode = (codeOverride ?? code).trim();
+    if (!activeCode) {
       setError("Please enter your access code.");
       return;
     }
@@ -167,7 +210,7 @@ export function OfferForm() {
           yearsOfExperience: fields.yearsOfExperience.trim(),
           notes: fields.notes.trim(),
           pdfBase64,
-          code: code.trim(),
+          code: activeCode,
         }),
       });
 
@@ -422,6 +465,21 @@ export function OfferForm() {
                   <p className="text-sm text-destructive">{payError}</p>
                 )}
 
+                {waiting && (
+                  <div className="flex items-start gap-3 rounded-lg border border-primary/30 bg-primary/[0.08] px-3 py-3 text-sm">
+                    <Loader2 className="mt-0.5 h-4 w-4 shrink-0 animate-spin text-primary" />
+                    <div>
+                      <p className="font-medium text-foreground">
+                        Waiting for your payment…
+                      </p>
+                      <p className="text-muted-foreground">
+                        Finish checkout in the other tab — this unlocks
+                        automatically. We&apos;ll also email your code as a backup.
+                      </p>
+                    </div>
+                  </div>
+                )}
+
                 <div className="flex items-center gap-3 pt-1">
                   <div className="h-px flex-1 bg-border" />
                   <span className="text-xs text-muted-foreground">
@@ -481,7 +539,7 @@ export function OfferForm() {
               <Button
                 size="lg"
                 className="flex-1 text-base"
-                onClick={handleAnalyze}
+                onClick={() => handleAnalyze()}
               >
                 Unlock &amp; Analyze <ArrowRight />
               </Button>
