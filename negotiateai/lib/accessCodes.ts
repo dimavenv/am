@@ -83,8 +83,13 @@ export function mintCode(): string {
 // deploys; otherwise falls back to in-process memory (resets on restart).
 
 const memory = new Set<string>();
-const REDIS_URL = process.env.UPSTASH_REDIS_REST_URL;
-const REDIS_TOKEN = process.env.UPSTASH_REDIS_REST_TOKEN;
+// Accept both the plain Upstash names and the ones Vercel's Upstash/KV
+// integration injects (KV_REST_API_URL / KV_REST_API_TOKEN). Both point at the
+// same Upstash REST endpoint, so either set works.
+const REDIS_URL =
+  process.env.UPSTASH_REDIS_REST_URL || process.env.KV_REST_API_URL;
+const REDIS_TOKEN =
+  process.env.UPSTASH_REDIS_REST_TOKEN || process.env.KV_REST_API_TOKEN;
 const key = (serial: string) => `nego:code:${serial}`;
 
 async function upstash(cmd: string[]): Promise<{ result: unknown }> {
