@@ -1,0 +1,16 @@
+<svg width="100" height="100" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="100" height="100" rx="24" fill="url(#negoGrad)"/>
+  <!-- ascending bars: salary climbing through negotiation -->
+  <rect x="25" y="60" width="13" height="18" rx="3" fill="#04130a"/>
+  <rect x="43" y="48" width="13" height="30" rx="3" fill="#04130a"/>
+  <rect x="61" y="36" width="13" height="42" rx="3" fill="#04130a"/>
+  <!-- trend line + arrowhead rising up-right -->
+  <path d="M26 56 L72 30" stroke="#04130a" stroke-width="6" stroke-linecap="round"/>
+  <path d="M60 30 L72 30 L72 42" stroke="#04130a" stroke-width="6" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+  <defs>
+    <linearGradient id="negoGrad" x1="0" y1="0" x2="100" y2="100" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#34d96b"/>
+      <stop offset="1" stop-color="#16a34a"/>
+    </linearGradient>
+  </defs>
+</svg>
