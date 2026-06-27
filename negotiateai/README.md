@@ -158,3 +158,37 @@ scripts/gen-codes.mjs     Mint signed access codes
 > — only honest, feature-based value props — since fabricated reviews/metrics
 > violate the FTC's rules on endorsements. Once you have real, consented customer
 > quotes or verifiable numbers, you can add a social-proof section back.
+
+## SEO
+
+The tool itself won't rank — it does the job, not the searching. So the site
+wraps it in a content layer on the one narrow topic ("salary negotiation
+email") and lets the tool convert that traffic.
+
+**What's built in:**
+
+- **Content layer** at `/blog` — cornerstone, example-driven guides targeting the
+  head terms (`salary negotiation email template`, `how to counter a lowball job
+  offer`). Add a post by appending to `POSTS` + `POST_BODIES` in
+  `lib/blog/posts.tsx`. Each post emits `Article` + `FAQPage` JSON-LD.
+- **`/sitemap.xml`** and **`/robots.txt`** are generated from code
+  (`app/sitemap.ts`, `app/robots.ts`) and always include every blog post.
+- **Structured data**: `Organization` + `WebSite` + `SoftwareApplication` site-wide
+  (`app/layout.tsx`) and `FAQPage` on the homepage.
+- **Canonicals + metadata** derive from `NEXT_PUBLIC_BASE_URL` via `lib/seo.ts`.
+  Set it to ONE canonical host (with or without `www`) — mixing splits signals.
+
+### Getting indexed by Google (Search Console)
+
+1. Go to [Google Search Console](https://search.google.com/search-console) and
+   add a property for your domain.
+2. Choose the **HTML tag** verification method, copy the `content` token, set it
+   as `GOOGLE_SITE_VERIFICATION` in Vercel, and redeploy. The app renders the
+   verification meta tag automatically; click **Verify**.
+3. In Search Console → **Sitemaps**, submit `https://negotiateai.site/sitemap.xml`.
+4. Use **URL Inspection** → **Request indexing** for the homepage and each blog
+   post to nudge first-time crawling (organic indexing still takes days/weeks).
+
+> New domains have no ranking history — this is all upside, not current
+> position. Expect indexing in days and meaningful ranking over weeks/months as
+> the content earns links and engagement.

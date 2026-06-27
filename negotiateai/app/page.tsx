@@ -1,4 +1,5 @@
 import { Suspense } from "react";
+import Link from "next/link";
 import { Check, Mail, Target, TrendingUp } from "lucide-react";
 
 import { OfferForm } from "@/components/OfferForm";
@@ -57,9 +58,23 @@ const FAQS = [
   },
 ];
 
+const faqJsonLd = {
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  mainEntity: FAQS.map((f) => ({
+    "@type": "Question",
+    name: f.q,
+    acceptedAnswer: { "@type": "Answer", text: f.a },
+  })),
+};
+
 export default function Home() {
   return (
     <main className="relative min-h-dvh overflow-hidden">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd) }}
+      />
       <div className="pointer-events-none absolute inset-0 bg-grid opacity-60" />
       <div className="pointer-events-none absolute left-1/2 top-0 h-[420px] w-[820px] -translate-x-1/2 rounded-full bg-primary/10 blur-[120px]" />
 
@@ -149,12 +164,29 @@ export default function Home() {
               </Card>
             ))}
           </div>
+
+          <div className="mt-10 text-center">
+            <p className="text-sm text-muted-foreground">
+              Want to write it yourself first? Read our{" "}
+              <Link
+                href="/blog"
+                className="font-medium text-primary underline underline-offset-2"
+              >
+                salary negotiation guides &amp; email templates
+              </Link>
+              .
+            </p>
+          </div>
         </section>
 
         {/* Footer */}
         <footer className="border-t border-border py-8 text-center text-xs text-muted-foreground">
           <p>
             © {new Date().getFullYear()} NegotiateAI · Not financial advice ·{" "}
+            <Link className="underline" href="/blog">
+              Guides
+            </Link>{" "}
+            ·{" "}
             <a className="underline" href="#">
               Privacy Policy
             </a>{" "}

@@ -64,3 +64,42 @@
     background-size: 28px 28px;
   }
 }
+
+/* Long-form article styling for blog posts (keeps post JSX to plain semantics). */
+@layer components {
+  .article {
+    @apply text-[15px] leading-relaxed text-foreground/90;
+  }
+  .article p {
+    @apply my-4;
+  }
+  .article h2 {
+    @apply mt-10 mb-3 text-2xl font-bold tracking-tight text-foreground;
+  }
+  .article h3 {
+    @apply mt-6 mb-2 text-lg font-semibold text-foreground;
+  }
+  .article ul {
+    @apply my-4 list-disc space-y-2 pl-5;
+  }
+  .article ol {
+    @apply my-4 list-decimal space-y-2 pl-5;
+  }
+  .article li {
+    @apply pl-1;
+  }
+  .article a {
+    @apply font-medium text-primary underline underline-offset-2 hover:text-primary/80;
+  }
+  .article a.not-prose,
+  .article .not-prose a {
+    @apply no-underline;
+  }
+  /* Copy-paste email templates */
+  .article blockquote {
+    @apply my-6 rounded-xl border border-border bg-card p-5 font-mono text-sm leading-relaxed text-foreground/90;
+  }
+  .article strong {
+    @apply font-semibold text-foreground;
+  }
+}
