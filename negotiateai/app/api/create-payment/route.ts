@@ -28,11 +28,12 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  // The email is encoded (signed) into the order id so the webhook can recover
-  // who to send the code to — no shared store needed between the two calls.
-  const orderId = encodeOrderId(email);
-
   try {
+    // The email is encoded (signed) into the order id so the webhook can
+    // recover who to send the code to — no shared store needed between the two
+    // calls. encodeOrderId throws if ACCESS_CODE_SECRET is unset, so keep it in
+    // the try block to surface a clean error instead of a bare 500.
+    const orderId = encodeOrderId(email);
     const url = await createInvoice({ orderId, amount: PRICE_USD, email });
     return NextResponse.json({ url });
   } catch (err) {
