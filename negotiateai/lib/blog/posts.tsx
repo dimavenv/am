@@ -82,6 +82,64 @@ export const POSTS: PostMeta[] = [
       },
     ],
   },
+  {
+    slug: "negotiate-salary-when-non-negotiable",
+    title: "How to Negotiate When the Salary Is “Non-Negotiable”",
+    description:
+      "“The salary is fixed” rarely means the whole offer is. A guide to negotiating total compensation when the base is non-negotiable — with a copy-paste email.",
+    date: "2026-06-28",
+    updated: "2026-06-28",
+    keywords: [
+      "salary non negotiable",
+      "negotiate when salary is non-negotiable",
+      "salary is fixed how to negotiate",
+      "negotiate benefits instead of salary",
+    ],
+    readingMinutes: 7,
+    faqs: [
+      {
+        q: "What do you say when the salary is non-negotiable?",
+        a: "Acknowledge the constraint, restate your interest, and pivot to the parts of the offer that usually do flex: a signing bonus, extra PTO, a faster review cycle, a title bump, remote/flex work, or a professional-development budget. Example: 'I understand the base is set. Since that's fixed, would a $10,000 signing bonus or an extra week of PTO be possible?'",
+      },
+      {
+        q: "Is salary ever really non-negotiable?",
+        a: "Sometimes the base truly is locked — public-sector bands, fixed pay scales, or strict leveling. But even then the total package usually has movable parts. 'Non-negotiable' almost always refers to base salary only, not bonus, equity, start date, title, or benefits.",
+      },
+      {
+        q: "What can I ask for instead of a higher salary?",
+        a: "Common wins include a signing bonus, additional PTO, a guaranteed early performance/comp review, equity or a larger equity grant, a higher title, remote or flexible hours, relocation support, and a learning/development budget.",
+      },
+    ],
+  },
+  {
+    slug: "total-compensation-negotiation",
+    title: "Total Compensation: How to Negotiate Beyond Base Salary",
+    description:
+      "Base salary is one number in a much bigger package. Learn how to value and negotiate total compensation — bonus, equity, PTO, and remote flexibility — with examples.",
+    date: "2026-06-28",
+    updated: "2026-06-28",
+    keywords: [
+      "total compensation negotiation",
+      "negotiate beyond base salary",
+      "signing bonus negotiation",
+      "equity negotiation job offer",
+    ],
+    readingMinutes: 8,
+    faqs: [
+      {
+        q: "What is included in total compensation?",
+        a: "Total compensation is everything you're paid, not just base salary: annual bonus, signing bonus, equity (RSUs or options), 401(k) match, health benefits, PTO, remote/flex arrangements, and perks like a learning budget. Two offers with the same base can differ by tens of thousands once you add it all up.",
+      },
+      {
+        q: "Should I negotiate base salary or a signing bonus?",
+        a: "Base salary compounds — it raises future raises, bonuses, and your next offer — so prioritize it. But a signing bonus is often the easiest lever when the base band is capped, and it's real money in year one. Ask for base first, then fall back to a signing bonus.",
+      },
+      {
+        q: "How do you negotiate equity in a job offer?",
+        a: "Treat equity as a number, not a mystery: ask for the strike price, vesting schedule, and the company's current 409A or preferred valuation so you can estimate its value. Then negotiate the size of the grant the same way you'd negotiate base — with a specific ask and a market comparison.",
+      },
+    ],
+  },
 ];
 
 export function getPost(slug: string): PostMeta | undefined {
@@ -103,7 +161,7 @@ function ToolCTA() {
       </p>
       <Link
         href="/#analyze"
-        className="mt-4 inline-flex h-11 items-center justify-center rounded-lg bg-primary px-6 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
+        className="mt-4 inline-flex h-11 items-center justify-center rounded-lg bg-primary px-6 text-sm font-medium !text-primary-foreground no-underline transition-colors hover:bg-primary/90 hover:!text-primary-foreground"
       >
         Analyze my offer — $9
       </Link>
@@ -281,7 +339,11 @@ const POST_BODIES: Record<string, ReactNode> = {
       <p>
         Related reading:{" "}
         <Link href="/blog/how-to-counter-a-lowball-job-offer">
-          How to counter a lowball job offer
+          how to counter a lowball job offer
+        </Link>{" "}
+        and{" "}
+        <Link href="/blog/negotiate-salary-when-non-negotiable">
+          negotiating when the salary is &quot;non-negotiable&quot;
         </Link>
         .
       </p>
@@ -374,6 +436,237 @@ const POST_BODIES: Record<string, ReactNode> = {
         Related reading:{" "}
         <Link href="/blog/salary-negotiation-email-templates">
           9 salary negotiation email templates
+        </Link>{" "}
+        and{" "}
+        <Link href="/blog/total-compensation-negotiation">
+          how to negotiate total compensation
+        </Link>
+        .
+      </p>
+    </>
+  ),
+
+  "negotiate-salary-when-non-negotiable": (
+    <>
+      <p>
+        &quot;The salary is non-negotiable&quot; is one of the most common lines
+        in hiring — and one of the most misunderstood. It almost never means the
+        whole offer is fixed. It means the <em>base</em> is fixed. And the base is
+        only one of a dozen things you can negotiate. This guide shows you how to
+        pivot gracefully and walk away with more, even when the number itself
+        won&apos;t move.
+      </p>
+
+      <h2>Why &quot;non-negotiable&quot; usually isn&apos;t</h2>
+      <p>
+        Recruiters say it for real reasons: rigid pay bands, internal equity
+        (paying you more than a peer causes problems), or simple anchoring to keep
+        you from pushing. But pay bands govern <strong>base salary</strong>, not
+        signing bonuses, equity, start dates, titles, or PTO. Those usually come
+        from different budgets and different approvers — which is exactly why
+        they&apos;re easier to move.
+      </p>
+
+      <h2>Step 1: Accept the constraint out loud</h2>
+      <p>
+        Don&apos;t argue the band. Arguing makes the recruiter defensive. Instead,
+        acknowledge it — that earns goodwill and frees you to redirect:
+      </p>
+      <blockquote>
+        &quot;Totally understand the base is fixed — I appreciate you being
+        straight with me. I&apos;m still really excited about the role.&quot;
+      </blockquote>
+
+      <h2>Step 2: Pivot to the movable parts</h2>
+      <p>Here&apos;s the full menu of what usually flexes, roughly in order of how often it works:</p>
+      <ul>
+        <li>
+          <strong>Signing bonus</strong> — the single easiest lever; one-time
+          cash that doesn&apos;t touch the band. $5,000–$20,000 is common.
+        </li>
+        <li>
+          <strong>Extra PTO</strong> — a week of vacation is real money and costs
+          them little.
+        </li>
+        <li>
+          <strong>An early comp review</strong> — a guaranteed raise conversation
+          at 6 months instead of 12.
+        </li>
+        <li>
+          <strong>Equity</strong> — a larger grant, when the company offers it.
+        </li>
+        <li>
+          <strong>Title</strong> — a bump that boosts both this role and your next
+          offer.
+        </li>
+        <li>
+          <strong>Remote / flexible hours</strong> and a{" "}
+          <strong>learning budget</strong> — low-cost yeses that improve your
+          day-to-day.
+        </li>
+      </ul>
+
+      <h2>Step 3: Send the email</h2>
+      <p>Pick two or three asks, not all of them. A focused ask is easier to grant:</p>
+      <blockquote>
+        Subject: Re: Offer — [Role]
+        <br />
+        <br />
+        Hi [Recruiter],
+        <br />
+        <br />
+        Thank you again for the offer — I&apos;m excited to join [Company]. I
+        understand the base salary is fixed, and that&apos;s completely fine.
+        <br />
+        <br />
+        Since the base is set, I wanted to ask about a couple of other pieces: would
+        a <strong>$12,000 signing bonus</strong> and an{" "}
+        <strong>extra week of PTO</strong> be possible? Either one would make this
+        an easy yes, and I&apos;d be ready to sign right away.
+        <br />
+        <br />
+        Best,
+        <br />
+        [Your name]
+      </blockquote>
+
+      <h2>If everything is truly locked</h2>
+      <p>
+        Occasionally the whole package is fixed — common in government, education,
+        or strict pay scales. Then your negotiation is about <em>information</em>:
+        ask about the raise timeline, promotion path, and review criteria so you
+        know exactly when the number <em>can</em> move. Get the answer in writing.
+      </p>
+
+      <p>
+        Not sure which asks are realistic for your role and level?{" "}
+        <Link href="/#analyze">NegotiateAI</Link> reads your offer and tells you
+        where the leverage is — then writes the email for you.
+      </p>
+
+      <ToolCTA />
+
+      <p>
+        Related reading:{" "}
+        <Link href="/blog/total-compensation-negotiation">
+          how to negotiate total compensation
+        </Link>{" "}
+        and{" "}
+        <Link href="/blog/salary-negotiation-email-templates">
+          9 salary negotiation email templates
+        </Link>
+        .
+      </p>
+    </>
+  ),
+
+  "total-compensation-negotiation": (
+    <>
+      <p>
+        Two offers with the same $140,000 base can be $40,000 apart once you add
+        everything up. Base salary is the headline, but total compensation — bonus,
+        equity, benefits, time, and flexibility — is the real number you&apos;re
+        negotiating. Here&apos;s how to see the whole package and move the parts
+        that matter.
+      </p>
+
+      <h2>What &quot;total comp&quot; actually includes</h2>
+      <ul>
+        <li>
+          <strong>Base salary</strong> — the number that compounds into future
+          raises and your next offer. Most important.
+        </li>
+        <li>
+          <strong>Annual bonus</strong> — usually a % of base; ask whether
+          it&apos;s a target or a guarantee.
+        </li>
+        <li>
+          <strong>Signing bonus</strong> — one-time cash, often the easiest lever.
+        </li>
+        <li>
+          <strong>Equity</strong> — RSUs or options; can dwarf salary at a
+          high-growth company, or be worth little. Know the difference.
+        </li>
+        <li>
+          <strong>Benefits &amp; retirement</strong> — 401(k) match, health
+          coverage quality, HSA contributions.
+        </li>
+        <li>
+          <strong>Time &amp; flexibility</strong> — PTO, remote work, hours. Hard
+          to price, easy to undervalue.
+        </li>
+      </ul>
+
+      <h2>Put a number on each line</h2>
+      <p>
+        You can&apos;t negotiate what you can&apos;t measure. Convert every piece
+        into an annual dollar figure so you can compare offers honestly. A quick
+        example for a $140,000 base offer:
+      </p>
+      <blockquote>
+        Base: $140,000
+        <br />
+        Bonus (15% target): $21,000
+        <br />
+        Equity ($120,000 over 4 years): $30,000/yr
+        <br />
+        401(k) match (4%): $5,600
+        <br />
+        Signing bonus: $15,000 (year one)
+        <br />
+        <strong>Year-one total: ~$211,600</strong>
+      </blockquote>
+
+      <h2>Negotiate base first — then everything else</h2>
+      <p>
+        Because base compounds, push it before anything else. When the base
+        won&apos;t move, that&apos;s your cue to work down the list — signing
+        bonus, then equity, then PTO. A template:
+      </p>
+      <blockquote>
+        Hi [Recruiter],
+        <br />
+        <br />
+        Thank you for the offer — I&apos;m excited about [Company]. I&apos;d love to
+        get the base to <strong>$155,000</strong> to match the market for this
+        role. If the base is capped, could we close the gap with a larger{" "}
+        <strong>signing bonus</strong> or an increased{" "}
+        <strong>equity grant</strong> instead? I&apos;m flexible on how we get
+        there.
+        <br />
+        <br />
+        Best,
+        <br />
+        [Your name]
+      </blockquote>
+
+      <h2>Don&apos;t forget the equity questions</h2>
+      <p>
+        Equity is where people leave the most value on the table because they
+        don&apos;t ask. Before you value an offer, get: the{" "}
+        <strong>number of shares/units</strong>, the{" "}
+        <strong>vesting schedule</strong> (typically 4 years, 1-year cliff), the{" "}
+        <strong>strike price</strong> for options, and the company&apos;s{" "}
+        <strong>current valuation</strong>. Without those, the equity line is a
+        guess.
+      </p>
+
+      <p>
+        <Link href="/#analyze">NegotiateAI</Link> factors total compensation into
+        its analysis — not just base — so the counter-offer and email it writes
+        reflect the whole package, not one line of it.
+      </p>
+
+      <ToolCTA />
+
+      <p>
+        Related reading:{" "}
+        <Link href="/blog/negotiate-salary-when-non-negotiable">
+          negotiating when the salary is &quot;non-negotiable&quot;
+        </Link>{" "}
+        and{" "}
+        <Link href="/blog/how-to-counter-a-lowball-job-offer">
+          how to counter a lowball job offer
         </Link>
         .
       </p>
