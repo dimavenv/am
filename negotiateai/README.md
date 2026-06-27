@@ -81,7 +81,8 @@ addition to signed codes (not single-use). Handy for testing or comps.
 ## How a run works
 
 1. User fills the multi-step form on `/` (role, numbers, optional PDF + notes).
-2. On the unlock step they pay via Cryptomus and receive a code by email.
+2. On the unlock step they pay via TryBit; the form auto-unlocks when the
+   payment settles (and a code is emailed as a backup).
 3. They paste the code; `POST /api/analyze` validates it, parses any PDF, calls
    the AI, and returns structured JSON (rating, market range, counter-offer,
    talking points, email).
@@ -153,7 +154,7 @@ scripts/gen-codes.mjs     Mint signed access codes
 4. For durable single-use enforcement across deploys, add an Upstash Redis
    integration and set the two `UPSTASH_*` vars (recommended in production).
 
-> ⚠️ The landing page ships with sample testimonials and a "10,000+ offers
-> analyzed" trust line. Replace these with real, substantiated numbers before
-> going live — fabricated testimonials/metrics violate the FTC's rules on
-> endorsements and fake reviews.
+> The landing page intentionally ships with **no testimonials or usage counts**
+> — only honest, feature-based value props — since fabricated reviews/metrics
+> violate the FTC's rules on endorsements. Once you have real, consented customer
+> quotes or verifiable numbers, you can add a social-proof section back.

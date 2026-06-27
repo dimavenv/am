@@ -1,26 +1,25 @@
 import { Suspense } from "react";
-import { Check, Star } from "lucide-react";
+import { Check, Mail, Target, TrendingUp } from "lucide-react";
 
 import { OfferForm } from "@/components/OfferForm";
 import { PaidBanner } from "@/components/PaidBanner";
 import { Card, CardContent } from "@/components/ui/card";
 
-const TESTIMONIALS = [
+const HIGHLIGHTS = [
   {
-    quote: "I got $14,000 more just from sending the email it wrote.",
-    name: "Marcus T.",
-    role: "Software Engineer, Austin TX",
+    Icon: TrendingUp,
+    title: "Your real market range",
+    body: "Benchmarked against public salary data for your exact role, city, and years of experience.",
   },
   {
-    quote:
-      "Thought the offer was standard. It was 18% below market. Negotiated up to market rate.",
-    name: "Priya S.",
-    role: "Product Manager, NYC",
+    Icon: Target,
+    title: "An exact counter-offer number",
+    body: "Not vague advice — a specific figure to ask for, with the reasoning to back it up.",
   },
   {
-    quote: "Worth every penny. Took 5 minutes and I got an extra week of PTO.",
-    name: "Jake R.",
-    role: "Data Analyst, Chicago",
+    Icon: Mail,
+    title: "A ready-to-send email",
+    body: "A professional negotiation email written for your situation. Copy, paste, send.",
   },
 ];
 
@@ -46,7 +45,7 @@ const FAQS = [
   },
   {
     q: "How accurate is the market data?",
-    a: "We use AI trained on real salary data patterns from Glassdoor, LinkedIn, and Levels.fyi to estimate a realistic range for your role, city, and experience.",
+    a: "We use AI to estimate a realistic range from public salary data for your role, city, and experience. It's a well-reasoned estimate to anchor your negotiation — not a guarantee — so sanity-check it against sources like Levels.fyi or Glassdoor for your specific company.",
   },
   {
     q: "What if I'm not happy with the results?",
@@ -69,7 +68,7 @@ export default function Home() {
         <section className="mx-auto max-w-3xl pb-12 pt-20 text-center sm:pt-28">
           <span className="inline-flex items-center gap-2 rounded-full border border-border bg-card px-3 py-1 text-xs text-muted-foreground">
             <span className="h-1.5 w-1.5 rounded-full bg-primary" />
-            10,000+ offers analyzed · No account needed · Instant results
+            No account needed · Private · Results in 60 seconds
           </span>
           <h1 className="mt-6 text-balance text-4xl font-bold tracking-tight sm:text-6xl">
             Find out if your job offer is{" "}
@@ -89,23 +88,18 @@ export default function Home() {
           </div>
         </section>
 
-        {/* Social proof */}
+        {/* What you get */}
         <section className="grid gap-4 py-8 sm:grid-cols-3">
-          {TESTIMONIALS.map((t) => (
-            <Card key={t.name}>
-              <CardContent className="space-y-4 p-6">
-                <div className="flex gap-0.5 text-primary">
-                  {Array.from({ length: 5 }).map((_, i) => (
-                    <Star key={i} className="h-3.5 w-3.5 fill-current" />
-                  ))}
-                </div>
-                <p className="text-sm leading-relaxed text-foreground/90">
-                  “{t.quote}”
+          {HIGHLIGHTS.map(({ Icon, title, body }) => (
+            <Card key={title}>
+              <CardContent className="space-y-3 p-6">
+                <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/15 text-primary">
+                  <Icon className="h-4 w-4" />
+                </span>
+                <p className="text-sm font-semibold">{title}</p>
+                <p className="text-sm leading-relaxed text-muted-foreground">
+                  {body}
                 </p>
-                <div>
-                  <p className="text-sm font-semibold">{t.name}</p>
-                  <p className="text-xs text-muted-foreground">{t.role}</p>
-                </div>
               </CardContent>
             </Card>
           ))}
