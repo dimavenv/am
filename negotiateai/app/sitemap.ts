@@ -15,6 +15,16 @@ export default function sitemap(): MetadataRoute.Sitemap {
       changeFrequency: "weekly",
       priority: 0.8,
     },
+    {
+      url: absoluteUrl("/terms"),
+      changeFrequency: "yearly",
+      priority: 0.3,
+    },
+    {
+      url: absoluteUrl("/privacy"),
+      changeFrequency: "yearly",
+      priority: 0.3,
+    },
   ];
 
   const postPages: MetadataRoute.Sitemap = POSTS.map((p) => ({

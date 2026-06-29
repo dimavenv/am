@@ -187,12 +187,16 @@ export default function Home() {
               Guides
             </Link>{" "}
             ·{" "}
-            <a className="underline" href="#">
-              Privacy Policy
-            </a>{" "}
+            <Link className="underline" href="/terms">
+              Terms
+            </Link>{" "}
             ·{" "}
-            <a className="underline" href="mailto:contact@negotiateai.site">
-              contact@negotiateai.site
+            <Link className="underline" href="/privacy">
+              Privacy
+            </Link>{" "}
+            ·{" "}
+            <a className="underline" href="mailto:support@negotiateai.site">
+              support@negotiateai.site
             </a>
           </p>
         </footer>
